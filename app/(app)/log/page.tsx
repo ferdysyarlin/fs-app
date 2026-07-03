@@ -318,7 +318,7 @@ export default function LogListPage() {
         ) : (
           Object.entries(groupedLogs).map(([year, yearLogs]) => (
             <div key={year} className="mb-10">
-              <div className="flex items-center gap-2 mb-3 lg:mb-5">
+              <div className="sticky top-[56px] lg:top-0 z-10 bg-background/95 backdrop-blur py-2 flex items-center gap-2 mb-2 lg:mb-4">
                 <div className="w-1 h-4 bg-primary rounded-full"></div>
                 <h2 className="text-[11px] lg:text-sm font-semibold text-muted-foreground uppercase tracking-widest">{year}</h2>
                 <div className="flex-1 border-t border-border mx-2"></div>

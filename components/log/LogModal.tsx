@@ -205,6 +205,9 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew }: LogModalPro
   const [showTaskPicker, setShowTaskPicker] = useState(false);
   const [showNewTaskForm, setShowNewTaskForm] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskNotes, setNewTaskNotes] = useState("");
+  const [newTaskDue, setNewTaskDue] = useState("");
+  const newTaskTitleRef = useRef<HTMLInputElement>(null);
   const [taskLoading, setTaskLoading] = useState(false);
   const [taskSaving, setTaskSaving] = useState(false);
   const taskPickerRef = useRef<HTMLDivElement>(null);
@@ -649,49 +652,83 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew }: LogModalPro
 
                   {/* New task quick form */}
                   {showNewTaskForm && (
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="mb-3 rounded-xl border border-primary/40 bg-card shadow-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                       <input
-                        autoFocus
+                        ref={newTaskTitleRef}
                         type="text"
-                        placeholder="Judul task baru..."
+                        placeholder="Judul task..."
                         value={newTaskTitle}
                         onChange={e => setNewTaskTitle(e.target.value)}
-                        onKeyDown={async e => {
-                          if (e.key === "Enter" && newTaskTitle.trim()) {
+                        onKeyDown={e => { if (e.key === "Escape") { setShowNewTaskForm(false); setNewTaskTitle(""); setNewTaskNotes(""); setNewTaskDue(""); } }}
+                        className="w-full px-3 py-2 text-sm outline-none bg-transparent font-medium placeholder:text-muted-foreground/60"
+                      />
+                      <textarea
+                        placeholder="Catatan (opsional)"
+                        value={newTaskNotes}
+                        onChange={e => setNewTaskNotes(e.target.value)}
+                        rows={2}
+                        className="w-full px-3 py-1 text-xs outline-none bg-transparent resize-none placeholder:text-muted-foreground/50 leading-relaxed"
+                      />
+                      <div className="px-3 pb-2 flex items-center gap-2 border-t border-border/50 pt-2">
+                        <div className="flex items-center gap-1.5 flex-1">
+                          <Calendar size={13} className="text-muted-foreground" />
+                          <input
+                            type="date"
+                            value={newTaskDue}
+                            onChange={e => setNewTaskDue(e.target.value)}
+                            className="bg-transparent text-xs outline-none text-muted-foreground"
+                          />
+                        </div>
+                        <button type="button" onClick={() => { setShowNewTaskForm(false); setNewTaskTitle(""); setNewTaskNotes(""); setNewTaskDue(""); }} className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded-lg hover:bg-muted transition-colors">Batal</button>
+                        <button
+                          type="button"
+                          disabled={taskSaving || !newTaskTitle.trim()}
+                          onClick={async () => {
+                            if (!newTaskTitle.trim()) return;
                             setTaskSaving(true);
                             try {
                               const createRes = await fetch("/api/google-tasks", {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ title: newTaskTitle, tasklistId }),
+                                body: JSON.stringify({
+                                  title: newTaskTitle,
+                                  notes: newTaskNotes || undefined,
+                                  due: newTaskDue ? new Date(newTaskDue).toISOString() : undefined,
+                                  tasklistId
+                                }),
                               });
                               const createJson = await createRes.json();
                               if (!createRes.ok) throw new Error(createJson.error);
                               const newTask = createJson.data;
-                              await fetch("/api/google-tasks/link", {
+                              
+                              const linkRes = await fetch("/api/google-tasks/link", {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
                                 body: JSON.stringify({ log_kerja_id: log.id, task_id: newTask.id }),
                               });
+                              if (!linkRes.ok) {
+                                const linkJson = await linkRes.json();
+                                throw new Error(linkJson.error);
+                              }
+                              
                               setLinkedTaskIds(prev => [...prev, newTask.id]);
                               setLinkedTaskDetails(prev => [...prev, newTask]);
                               setAllTasks(prev => [newTask, ...prev]);
-                              setNewTaskTitle("");
+                              setNewTaskTitle(""); setNewTaskNotes(""); setNewTaskDue("");
+                              // keep form open for rapid input or close it? Let's close it
                               setShowNewTaskForm(false);
                             } catch (err: any) {
                               toast.error(err.message);
                             } finally {
                               setTaskSaving(false);
                             }
-                          }
-                          if (e.key === "Escape") { setShowNewTaskForm(false); setNewTaskTitle(""); }
-                        }}
-                        className="flex-1 bg-muted/60 border border-primary rounded-lg px-2 py-1.5 text-xs outline-none"
-                      />
-                      {taskSaving && <Loader2 size={14} className="animate-spin text-muted-foreground" />}
-                      <button onClick={() => { setShowNewTaskForm(false); setNewTaskTitle(""); }} className="text-muted-foreground hover:text-foreground">
-                        <X size={14} />
-                      </button>
+                          }}
+                          className="text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-lg font-medium disabled:opacity-50 flex items-center gap-1 hover:bg-primary/90 transition-colors"
+                        >
+                          {taskSaving && <Loader2 size={12} className="animate-spin" />}
+                          Buat & Tautkan
+                        </button>
+                      </div>
                     </div>
                   )}
 
@@ -741,7 +778,7 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew }: LogModalPro
                       </button>
                       <span className="text-muted-foreground/40 text-[10px]">·</span>
                       <button
-                        onClick={() => { setShowNewTaskForm(v => !v); setShowTaskPicker(false); }}
+                        onClick={() => { setShowNewTaskForm(v => !v); setShowTaskPicker(false); setTimeout(() => newTaskTitleRef.current?.focus(), 50); }}
                         className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors"
                       >
                         <Plus size={12} /> Buat & Tautkan
