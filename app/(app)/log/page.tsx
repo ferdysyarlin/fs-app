@@ -192,11 +192,8 @@ export default function LogListPage() {
 
   const totalPages = Math.ceil(total / PER_PAGE);
 
-  // Group normal logs by Year for UI display
-  const normalLogs = logs.filter(l => !l.is_pinned);
-  const pinnedLogs = logs.filter(l => l.is_pinned);
-
-  const groupedLogs = normalLogs.reduce((acc, log) => {
+  // Group logs by Year for UI display
+  const groupedLogs = logs.reduce((acc, log) => {
     const year = new Date(log.tanggal).getFullYear().toString();
     if (!acc[year]) acc[year] = [];
     acc[year].push(log);
@@ -373,86 +370,6 @@ export default function LogListPage() {
           </div>
         ) : (
           <div className="space-y-6 sm:space-y-10 pb-20">
-            {/* Pinned Logs Section */}
-            {pinnedLogs.length > 0 && viewMode === "masonry" && (
-              <div className="mb-10">
-                <div className="sticky top-[56px] lg:top-[68px] z-10 bg-background/95 backdrop-blur py-2 flex items-center gap-2 mb-2 lg:mb-4">
-                  <div className="w-1 h-4 bg-red-500 rounded-full"></div>
-                  <h2 className="text-[11px] lg:text-sm font-bold text-red-500 uppercase tracking-widest flex items-center gap-1">
-                    <Pin size={14} className="fill-current" /> Disematkan
-                  </h2>
-                  <div className="flex-1 border-t border-border mx-2"></div>
-                  <span className="text-[10px] lg:text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-md">{pinnedLogs.length} Log</span>
-                </div>
-                <div className="columns-2 lg:columns-3 xl:columns-4 gap-2 lg:gap-4 space-y-2 lg:space-y-4">
-                  {pinnedLogs.map((log: any) => (
-                    <div key={log.id} className="break-inside-avoid">
-                      <Card 
-                        className="hover:shadow-md transition-shadow group overflow-hidden border-2 cursor-pointer border-red-500 bg-red-500/5 dark:bg-red-500/10"
-                        onClick={() => openModal(log)}
-                      >
-                        {log.gambar && log.gambar.length > 0 && (
-                          <div className={cn("grid gap-0.5 bg-background",
-                            log.gambar.length === 1 ? 'grid-cols-1' :
-                              log.gambar.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
-                          )}>
-                            {log.gambar.slice(0, 3).map((img: any, idx: number) => (
-                              <div
-                                key={img.id}
-                                className="w-full h-24 lg:h-32 bg-muted relative overflow-hidden cursor-zoom-in group/img"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setPreviewImg({ id: img.id, url: img.url, name: img.name, log });
-                                }}
-                              >
-                                <img
-                                  src={`/api/image/${img.id}`}
-                                  alt={img.name}
-                                  className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-300"
-                                />
-                                <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/30 transition-colors flex items-center justify-center">
-                                  <Eye size={18} className="text-white opacity-0 group-hover/img:opacity-100 transition-opacity" />
-                                </div>
-                                {idx === 2 && log.gambar.length > 3 && (
-                                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                    <span className="text-white font-medium text-xs lg:text-sm">+{log.gambar.length - 3}</span>
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        <CardContent className="p-2.5 lg:p-3.5 flex flex-col gap-1.5">
-                          <div className="flex items-center gap-1.5 text-muted-foreground text-[10px] lg:text-xs font-medium">
-                            <Calendar size={10} className="lg:w-3 lg:h-3" />
-                            {formatDateShort(log.tanggal)}
-                          </div>
-                          <div className="text-xs lg:text-xs text-foreground leading-relaxed whitespace-pre-wrap">
-                            {log.deskripsi || <span className="italic opacity-50">Tanpa deskripsi</span>}
-                          </div>
-                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-1 pt-1.5 border-t border-border/50 gap-2 sm:gap-0">
-                            <div className="flex items-center gap-1.5">
-                              <span className={cn("px-2 py-0.5 rounded-full text-[9px] lg:text-[10px] font-bold tracking-wider border", getStatusColor(log.status))}>
-                                {log.status.toUpperCase()}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <button
-                                className="p-1.5 rounded hover:bg-background transition-colors text-red-500 hover:text-red-600"
-                                onClick={(e) => togglePin(e, log)}
-                                title="Lepas Pin"
-                              >
-                                <Pin size={14} className="fill-current" />
-                              </button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {Object.entries(groupedLogs).map(([year, yearLogs]) => (
             <div key={year} className="mb-10">
