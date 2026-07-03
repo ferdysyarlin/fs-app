@@ -559,13 +559,13 @@ export default function LaporanPage() {
               {/* Main Report Table */}
               <table className="w-full border-collapse text-[11pt] mb-6 border border-black">
                 <thead>
-                  <tr className="leading-tight">
-                    <th className="border border-black px-2 py-1 w-px text-center align-middle font-semibold">No</th>
-                    <th className="border border-black px-2 py-1 w-px whitespace-nowrap text-center align-middle font-semibold">Tanggal</th>
-                    <th className="border border-black px-4 py-1 whitespace-nowrap text-center align-middle font-semibold">Jam<br/>Masuk</th>
-                    <th className="border border-black px-4 py-1 whitespace-nowrap text-center align-middle font-semibold">Jam<br/>Pulang</th>
-                    <th className="border border-black px-4 py-1 text-center align-middle font-semibold w-1/3">Rencana Hasil Kerja</th>
-                    <th className="border border-black px-4 py-1 text-center align-middle font-semibold">{columnRealisasi}</th>
+                  <tr className="leading-normal">
+                    <th className="border border-black px-2 py-3 w-px text-center align-middle font-semibold">No</th>
+                    <th className="border border-black px-2 py-3 w-px whitespace-nowrap text-center align-middle font-semibold">Tanggal</th>
+                    <th className="border border-black px-4 py-3 whitespace-nowrap text-center align-middle font-semibold">Jam<br/>Masuk</th>
+                    <th className="border border-black px-4 py-3 whitespace-nowrap text-center align-middle font-semibold">Jam<br/>Pulang</th>
+                    <th className="border border-black px-4 py-3 text-center align-middle font-semibold w-1/3">Rencana Hasil Kerja</th>
+                    <th className="border border-black px-4 py-3 text-center align-middle font-semibold">{columnRealisasi}</th>
                   </tr>
                 </thead>
                 <tbody>
