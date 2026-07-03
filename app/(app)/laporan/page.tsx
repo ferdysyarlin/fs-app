@@ -157,37 +157,41 @@ export default function LaporanPage() {
       {/* Title removed */}
 
       <div className="flex flex-col gap-6">
-        {/* Horizontal Tabs */}
-        <div className="flex gap-6 border-b border-border">
-          {[
-            { id: "wfh", label: "WFH" },
-            { id: "bulanan", label: "Bulanan" },
-          ].map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setActiveTab(t.id as any)}
-              className={`pb-3 text-sm font-medium transition-all border-b-2 ${
-                activeTab === t.id
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+        {/* Top Controls */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          {/* Horizontal Tabs (Capsule) */}
+          <div className="flex gap-2 bg-muted p-1 rounded-full">
+            {[
+              { id: "wfh", label: "WFH" },
+              { id: "bulanan", label: "Bulanan" },
+            ].map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setActiveTab(t.id as any)}
+                className={`px-5 py-2 text-sm font-medium transition-all rounded-full ${
+                  activeTab === t.id
+                    ? "bg-background text-foreground shadow"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
 
-        {/* Content */}
-        <div className="flex-1 space-y-6">
           {/* Filter Bulan & Tahun */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Select label="Bulan" value={bulan} onChange={e => setBulan(e.target.value)} className="flex-1">
+          <div className="flex items-center gap-2">
+            <Select value={bulan} onChange={e => setBulan(e.target.value)} className="w-auto h-10 text-sm rounded-full bg-background border-border">
               {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
             </Select>
-            <Select label="Tahun" value={tahun} onChange={e => setTahun(e.target.value)} className="flex-1">
+            <Select value={tahun} onChange={e => setTahun(e.target.value)} className="w-auto h-10 text-sm rounded-full bg-background border-border">
               {years.map(y => <option key={y} value={y}>{y}</option>)}
             </Select>
           </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1">
 
               <div className="space-y-4">
                 {loading ? (
@@ -273,24 +277,26 @@ export default function LaporanPage() {
                         </tbody>
                       </table>
                     </div>
-                    <div className="flex justify-end">
-                      <Button 
-                        onClick={() => {
-                          if (!profil.nama_lengkap) {
-                            toast.error("Data profil belum lengkap! Silakan isi di menu Pengaturan > Profil Laporan.");
-                          }
-                          setShowPreview(true);
-                        }}
-                        disabled={selectedItems.length === 0}
-                        className="gap-2 shadow-lg"
-                      >
-                        <Printer size={16} /> Preview & Cetak Laporan
-                      </Button>
-                    </div>
                   </>
                 )}
               </div>
         </div>
+      </div>
+
+      {/* Floating Action Button */}
+      <div className="fixed bottom-6 right-6 z-30">
+        <Button 
+          onClick={() => {
+            if (!profil.nama_lengkap) {
+              toast.error("Data profil belum lengkap! Silakan isi di menu Pengaturan > Profil Laporan.");
+            }
+            setShowPreview(true);
+          }}
+          disabled={selectedItems.length === 0}
+          className="rounded-full shadow-lg h-14 px-6 gap-2 bg-primary hover:bg-primary/90 hover:scale-105 transition-all text-primary-foreground"
+        >
+          <Printer size={20} /> <span className="hidden sm:inline font-semibold">Preview & Cetak</span>
+        </Button>
       </div>
 
       {/* Print Preview Modal */}

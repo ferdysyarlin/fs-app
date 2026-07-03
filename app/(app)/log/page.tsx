@@ -625,7 +625,8 @@ export default function LogListPage() {
                 )}
               </div>
             </div>
-          ))
+          ))}
+          </div>
         )}
 
         {/* Pagination */}
