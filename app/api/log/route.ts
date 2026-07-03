@@ -36,26 +36,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message, data: null }, { status: 500 });
   }
 
-  let yearCounts: Record<string, number> | undefined;
-
-  if (page === 1) {
-    let summaryQuery = supabase.from("log_kerja").select("tanggal");
-    if (q)      summaryQuery = summaryQuery.ilike("deskripsi", `%${q}%`);
-    if (status) summaryQuery = summaryQuery.eq("status", status);
-    if (dari)   summaryQuery = summaryQuery.gte("tanggal", dari);
-    if (sampai) summaryQuery = summaryQuery.lte("tanggal", sampai);
-    
-    const { data: summaryData } = await summaryQuery;
-    if (summaryData) {
-      yearCounts = summaryData.reduce((acc, row) => {
-        const year = new Date(row.tanggal).getFullYear().toString();
-        acc[year] = (acc[year] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-    }
-  }
-
-  return NextResponse.json({ data, error: null, count, yearCounts });
+  return NextResponse.json({ data, error: null, count });
 }
 
 
