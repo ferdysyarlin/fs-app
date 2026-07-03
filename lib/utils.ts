@@ -14,7 +14,7 @@ export function formatDate(date: string | Date, fmt = "dd MMMM yyyy") {
 }
 
 export function formatDateShort(date: string | Date) {
-  return formatDate(date, "d MMM yyyy");
+  return formatDate(date, "EEEE, d MMM yyyy");
 }
 
 export function formatDateTime(date: string | Date) {
