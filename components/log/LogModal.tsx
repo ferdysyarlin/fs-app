@@ -214,6 +214,12 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew, allGoogleTask
   const [taskSaving, setTaskSaving] = useState(false);
   const taskPickerRef = useRef<HTMLDivElement>(null);
 
+  const [selectedEditTask, setSelectedEditTask] = useState<any>(null);
+  const [editTaskTitle, setEditTaskTitle] = useState("");
+  const [editTaskNotes, setEditTaskNotes] = useState("");
+  const [editTaskDue, setEditTaskDue] = useState("");
+  const [editTaskSaving, setEditTaskSaving] = useState(false);
+
   // Fetch all tasks for picker
   const fetchAllTasks = useCallback(async () => {
     if (allGoogleTasks) {
@@ -621,45 +627,124 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew, allGoogleTask
                   {/* Linked tasks list */}
                   {linkedTaskDetails.length > 0 && (
                     <div className="flex flex-col gap-1.5 mb-2">
-                      {linkedTaskDetails.map((task: any) => (
-                        <div key={task.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/60 border border-border/50 group">
-                          <button
-                            onClick={async () => {
-                              const isDone = task.status === "completed";
-                              const res = await fetch(`/api/google-tasks/${task.id}`, {
-                                method: "PUT",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ tasklistId, completed: !isDone }),
-                              });
-                              if (res.ok) {
-                                const json = await res.json();
-                                setLinkedTaskDetails(prev => prev.map(t => t.id === task.id ? json.data : t));
-                              }
-                            }}
-                            className="flex-shrink-0 text-muted-foreground hover:text-primary transition-colors"
-                          >
-                            {task.status === "completed"
-                              ? <CheckCircle2 size={16} className="text-primary" />
-                              : <Circle size={16} />}
-                          </button>
-                          <span className={cn("flex-1 text-xs truncate", task.status === "completed" && "line-through text-muted-foreground")}>
-                            {task.title}
-                          </span>
-                          <button
-                            onClick={async () => {
-                              const res = await fetch(`/api/google-tasks/link?log_kerja_id=${log.id}&task_id=${task.id}`, { method: "DELETE" });
-                              if (res.ok) {
-                                setLinkedTaskIds(prev => prev.filter(id => id !== task.id));
-                                setLinkedTaskDetails(prev => prev.filter(t => t.id !== task.id));
-                              }
-                            }}
-                            className="opacity-0 group-hover:opacity-100 flex-shrink-0 text-muted-foreground hover:text-red-500 transition-all p-0.5"
-                            title="Lepas tautan"
-                          >
-                            <X size={12} />
-                          </button>
-                        </div>
-                      ))}
+                      {linkedTaskDetails.map((task: any) => {
+                        const isEditing = selectedEditTask?.id === task.id;
+                        
+                        if (isEditing) {
+                          return (
+                            <div key={task.id} className="mb-2 p-3 rounded-xl border border-primary/40 bg-card shadow-sm flex flex-col gap-2">
+                              <input
+                                type="text"
+                                placeholder="Judul task..."
+                                value={editTaskTitle}
+                                onChange={e => setEditTaskTitle(e.target.value)}
+                                className="w-full px-2 py-1 text-sm outline-none bg-transparent font-medium placeholder:text-muted-foreground/60 border-b border-border/50 focus:border-primary/50"
+                              />
+                              <textarea
+                                placeholder="Catatan (opsional)"
+                                value={editTaskNotes}
+                                onChange={e => setEditTaskNotes(e.target.value)}
+                                rows={2}
+                                className="w-full px-2 py-1 text-xs outline-none bg-transparent resize-none placeholder:text-muted-foreground/60 border-b border-border/50 focus:border-primary/50"
+                              />
+                              <div className="flex items-center gap-2 mt-1 justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Calendar size={14} className="text-muted-foreground" />
+                                  <input
+                                    type="date"
+                                    value={editTaskDue}
+                                    onChange={e => setEditTaskDue(e.target.value)}
+                                    className="bg-transparent text-xs text-muted-foreground outline-none cursor-pointer"
+                                  />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <button onClick={() => setSelectedEditTask(null)} className="text-xs text-muted-foreground px-2 py-1 hover:bg-muted rounded">Batal</button>
+                                  <button
+                                    onClick={async () => {
+                                      if (!editTaskTitle.trim()) return;
+                                      setEditTaskSaving(true);
+                                      try {
+                                        const finalTitle = task.title.startsWith("⭐") ? `⭐ ${editTaskTitle.replace(/^⭐\s*/, "")}` : editTaskTitle;
+                                        const res = await fetch(`/api/google-tasks/${task.id}`, {
+                                          method: "PUT",
+                                          headers: { "Content-Type": "application/json" },
+                                          body: JSON.stringify({
+                                            tasklistId,
+                                            title: finalTitle,
+                                            notes: editTaskNotes || undefined,
+                                            due: editTaskDue ? new Date(editTaskDue).toISOString() : undefined,
+                                          }),
+                                        });
+                                        const json = await res.json();
+                                        if (!res.ok) throw new Error(json.error);
+                                        setLinkedTaskDetails(prev => prev.map(t => t.id === task.id ? json.data : t));
+                                        setSelectedEditTask(null);
+                                        toast.success("Task diperbarui");
+                                      } catch (err: any) {
+                                        toast.error(err.message);
+                                      } finally {
+                                        setEditTaskSaving(false);
+                                      }
+                                    }}
+                                    disabled={!editTaskTitle.trim() || editTaskSaving}
+                                    className="text-xs bg-primary text-primary-foreground px-3 py-1 rounded font-medium disabled:opacity-50 flex items-center gap-1"
+                                  >
+                                    {editTaskSaving && <Loader2 size={10} className="animate-spin" />}
+                                    Simpan
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+                        
+                        return (
+                          <div key={task.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/60 border border-border/50 group cursor-pointer" onClick={() => {
+                            setSelectedEditTask(task);
+                            setEditTaskTitle(task.title.replace(/^⭐\s*/, ""));
+                            setEditTaskNotes(task.notes || "");
+                            setEditTaskDue(task.due ? task.due.split("T")[0] : "");
+                          }}>
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const isDone = task.status === "completed";
+                                const res = await fetch(`/api/google-tasks/${task.id}`, {
+                                  method: "PUT",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ tasklistId, completed: !isDone }),
+                                });
+                                if (res.ok) {
+                                  const json = await res.json();
+                                  setLinkedTaskDetails(prev => prev.map(t => t.id === task.id ? json.data : t));
+                                }
+                              }}
+                              className="flex-shrink-0 text-muted-foreground hover:text-primary transition-colors"
+                            >
+                              {task.status === "completed"
+                                ? <CheckCircle2 size={16} className="text-primary" />
+                                : <Circle size={16} />}
+                            </button>
+                            <span className={cn("flex-1 text-xs truncate", task.status === "completed" && "line-through text-muted-foreground")}>
+                              {task.title}
+                            </span>
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const res = await fetch(`/api/google-tasks/link?log_kerja_id=${log.id}&task_id=${task.id}`, { method: "DELETE" });
+                                if (res.ok) {
+                                  setLinkedTaskIds(prev => prev.filter(id => id !== task.id));
+                                  setLinkedTaskDetails(prev => prev.filter(t => t.id !== task.id));
+                                }
+                              }}
+                              className="opacity-0 group-hover:opacity-100 flex-shrink-0 text-muted-foreground hover:text-red-500 transition-all p-0.5"
+                              title="Lepas tautan"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
 

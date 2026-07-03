@@ -234,31 +234,8 @@ export default function TasksPage() {
 
   return (
     <div className="w-full h-full overflow-hidden flex flex-col p-4 md:p-6 lg:p-8">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6 flex-shrink-0">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <CheckSquare size={24} className="text-primary" />
-            Tasks
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {activeTasks.length} aktif · {doneCnt} selesai
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={fetchTasks} className="p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="Refresh">
-            <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
-          </button>
-          <button
-            id="btn-add-task"
-            onClick={() => { setShowNewForm(v => !v); setTimeout(() => newTitleRef.current?.focus(), 50); }}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20"
-          >
-            <Plus size={18} />
-            <span className="hidden sm:inline">Tambah Task</span>
-          </button>
-        </div>
-      </div>
+      {/* Search & Filter Bar */}
+      <div className="flex flex-col sm:flex-row items-center gap-3 mb-6 flex-shrink-0">
 
       {error && (
         <div className="mb-4 flex items-start gap-3 p-4 rounded-xl border border-destructive/40 bg-destructive/5 text-destructive text-sm flex-shrink-0">
@@ -438,6 +415,24 @@ export default function TasksPage() {
             {doneCnt} task selesai tidak ditampilkan
           </p>
         )}
+      </div>
+
+      {/* Floating Action Buttons */}
+      <div className="fixed bottom-6 right-6 flex flex-col gap-2 z-30">
+        <button
+          title="Refresh"
+          onClick={fetchTasks}
+          className="w-10 h-10 rounded-full bg-background border border-border shadow-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:scale-110 transition-transform"
+        >
+          <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+        </button>
+        <button
+          title="Tambah Task"
+          onClick={() => { setShowNewForm(v => !v); setTimeout(() => newTitleRef.current?.focus(), 50); }}
+          className="w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 hover:scale-105 transition-all"
+        >
+          <Plus size={24} />
+        </button>
       </div>
     </div>
   );
