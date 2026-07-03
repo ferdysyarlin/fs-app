@@ -9,7 +9,7 @@ import { Input, Select } from "@/components/ui/input";
 import { formatDateShort, cn } from "@/lib/utils";
 import {
   Search, Plus, FileText, Calendar, Trash2, Pin, Link2, Eye, X as XIcon, ExternalLink,
-  RefreshCw, ChevronLeft, ChevronRight, Filter, Paperclip, LayoutGrid, LayoutDashboard
+  RefreshCw, ChevronLeft, ChevronRight, Filter, Paperclip, LayoutGrid, LayoutDashboard, CheckSquare
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
@@ -417,6 +417,11 @@ export default function LogListPage() {
                             <button className="p-1.5 rounded hover:bg-background text-muted-foreground hover:text-foreground transition-colors" title="Pin (Coming Soon)">
                               <Pin size={14} />
                             </button>
+                            {log.google_task_ids && log.google_task_ids.length > 0 && (
+                              <button className="p-1.5 rounded hover:bg-background text-primary transition-colors cursor-default" title={`${log.google_task_ids.length} Task Terkait`}>
+                                <CheckSquare size={14} />
+                              </button>
+                            )}
                             <button
                               className="p-1.5 rounded hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors"
                               onClick={(e) => {

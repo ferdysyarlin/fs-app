@@ -29,7 +29,6 @@ export default function TasksPage() {
   const [tasklistId, setTasklistId] = useState("@default");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   // New task form
   const [showNewForm, setShowNewForm] = useState(false);
@@ -38,6 +37,9 @@ export default function TasksPage() {
   const [newDue, setNewDue] = useState("");
   const [saving, setSaving] = useState(false);
   const newTitleRef = useRef<HTMLInputElement>(null);
+
+  // Global linked tasks
+  const [globalLinkedIds, setGlobalLinkedIds] = useState<Set<string>>(new Set());
 
   // Detail inline accordion
   const [selectedTask, setSelectedTask] = useState<GTask | null>(null);
@@ -55,11 +57,20 @@ export default function TasksPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/google-tasks");
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error);
-      setTasks(json.data ?? []);
-      if (json.tasklistId) setTasklistId(json.tasklistId);
+      const [resTasks, resLinked] = await Promise.all([
+        fetch("/api/google-tasks"),
+        fetch("/api/google-tasks/linked-ids")
+      ]);
+      const jsonTasks = await resTasks.json();
+      if (!resTasks.ok) throw new Error(jsonTasks.error);
+      
+      setTasks(jsonTasks.data ?? []);
+      if (jsonTasks.tasklistId) setTasklistId(jsonTasks.tasklistId);
+      
+      if (resLinked.ok) {
+        const jsonLinked = await resLinked.json();
+        setGlobalLinkedIds(new Set(jsonLinked.data ?? []));
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -326,13 +337,19 @@ export default function TasksPage() {
                   </button>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{task.title.replace(/^⭐\s*/, "")}</p>
-                    {!isSelected && (task.notes || task.due) && (
+                    {!isSelected && (task.notes || task.due || globalLinkedIds.has(task.id)) && (
                       <div className="flex items-center gap-2 mt-0.5">
                         {task.notes && <span className="text-[11px] text-muted-foreground truncate max-w-[200px]">{task.notes}</span>}
                         {task.notes && task.due && <span className="text-muted-foreground/40 text-[10px]">·</span>}
                         {task.due && (
                           <span className={cn("text-[11px]", new Date(task.due) < new Date() ? "text-red-500 font-medium" : "text-muted-foreground")}>
                             {format(new Date(task.due), "d MMM yyyy", { locale: idLocale })}
+                          </span>
+                        )}
+                        {((task.notes || task.due) && globalLinkedIds.has(task.id)) && <span className="text-muted-foreground/40 text-[10px]">·</span>}
+                        {globalLinkedIds.has(task.id) && (
+                          <span className="flex items-center gap-1 text-[11px] text-primary/70 font-medium bg-primary/5 px-1.5 py-0.5 rounded-md border border-primary/10">
+                            <FileText size={10} /> Terkait Log
                           </span>
                         )}
                       </div>
