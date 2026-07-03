@@ -102,11 +102,11 @@ export default function LogListPage() {
       params.set("tanggal_dari", tanggalFilter);
       params.set("tanggal_sampai", tanggalFilter);
     } else {
-      if (bulanFilter && tahunFilter) {
-        // Find last day of month
-        const lastDay = new Date(parseInt(tahunFilter), parseInt(bulanFilter), 0).getDate();
-        params.set("tanggal_dari", `${tahunFilter}-${bulanFilter.padStart(2, '0')}-01`);
-        params.set("tanggal_sampai", `${tahunFilter}-${bulanFilter.padStart(2, '0')}-${lastDay}`);
+      if (bulanFilter) {
+        const y = tahunFilter || new Date().getFullYear().toString();
+        const lastDay = new Date(parseInt(y), parseInt(bulanFilter), 0).getDate();
+        params.set("tanggal_dari", `${y}-${bulanFilter.padStart(2, '0')}-01`);
+        params.set("tanggal_sampai", `${y}-${bulanFilter.padStart(2, '0')}-${lastDay}`);
       } else if (tahunFilter) {
         params.set("tanggal_dari", `${tahunFilter}-01-01`);
         params.set("tanggal_sampai", `${tahunFilter}-12-31`);
@@ -213,6 +213,16 @@ export default function LogListPage() {
 
   const mobileHeader = typeof document !== "undefined" ? document.getElementById("mobile-header-center") : null;
 
+  const hasActiveFilters = Boolean(q || statusFilter || bulanFilter || tahunFilter || tanggalFilter);
+
+  const clearFilters = () => {
+    setQ("");
+    setStatusFilter("");
+    setBulanFilter("");
+    setTahunFilter("");
+    setTanggalFilter("");
+  };
+
   const SearchFilterMobile = () => (
     <div className="flex items-center gap-2 w-full px-1">
       <div className="relative flex-1">
@@ -225,9 +235,14 @@ export default function LogListPage() {
           className="w-full h-8 pl-8 pr-3 rounded-full bg-background border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none text-xs transition-all"
         />
       </div>
+      {hasActiveFilters && (
+        <button onClick={clearFilters} className="w-8 h-8 flex items-center justify-center rounded-full bg-destructive/10 text-destructive border border-destructive/20 flex-shrink-0 transition-colors">
+          <X size={14} />
+        </button>
+      )}
       <button
         onClick={() => setShowMobileFilter(!showMobileFilter)}
-        className={cn("w-8 h-8 flex items-center justify-center rounded-full transition-colors flex-shrink-0", showMobileFilter ? "bg-primary text-primary-foreground" : "bg-background border border-border text-foreground")}
+        className={cn("w-8 h-8 flex items-center justify-center rounded-full transition-colors flex-shrink-0", showMobileFilter ? "bg-primary text-primary-foreground" : hasActiveFilters ? "bg-primary/20 text-primary border border-primary/30" : "bg-background border border-border text-foreground")}
       >
         <Filter size={14} />
       </button>
@@ -278,6 +293,11 @@ export default function LogListPage() {
               onChange={(e) => setTanggalFilter(e.target.value)}
               className="w-auto h-9 text-xs rounded-full"
             />
+            {hasActiveFilters && (
+              <button onClick={clearFilters} className="h-9 px-3 flex items-center gap-1.5 rounded-full bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20 text-xs font-medium transition-colors">
+                <X size={14} /> Bersihkan
+              </button>
+            )}
           </div>
         </div>
       </div>
