@@ -32,6 +32,8 @@ export default function LogListPage() {
   const confirmDialog = useConfirm();
   const [previewImg, setPreviewImg] = useState<{ id: string; url: string; name: string; log?: any } | null>(null);
   const [viewMode, setViewMode] = useState<"masonry" | "gallery">("masonry");
+  const [globalTasks, setGlobalTasks] = useState<any[] | null>(null);
+  const [globalTasklistId, setGlobalTasklistId] = useState("@default");
 
   // Open modal: change URL to /log?id=ID
   const openModal = (log: any) => {
@@ -125,6 +127,17 @@ export default function LogListPage() {
   }, [page, debouncedQ, statusFilter, bulanFilter, tahunFilter, tanggalFilter]);
 
   useEffect(() => { fetchLogs(); }, [fetchLogs]);
+
+  useEffect(() => {
+    // Background fetch for instant task load in LogModal
+    fetch("/api/google-tasks")
+      .then(r => r.json())
+      .then(json => {
+        if (json.data) setGlobalTasks(json.data);
+        if (json.tasklistId) setGlobalTasklistId(json.tasklistId);
+      })
+      .catch(() => {});
+  }, []);
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -527,9 +540,11 @@ export default function LogListPage() {
         <LogModal
           log={Object.keys(modalLog).length > 0 ? modalLog : null}
           isNew={Object.keys(modalLog).length === 0}
-          loading={false}
+          loading={loading && modalLog === "loading"}
           onClose={closeModal}
           onUpdate={handleUpdateLog}
+          allGoogleTasks={globalTasks}
+          globalTasklistId={globalTasklistId}
         />
       )}
 

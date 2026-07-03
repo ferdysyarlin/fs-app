@@ -50,6 +50,8 @@ interface LogModalProps {
   onClose: () => void;
   onUpdate: (updatedLog: LogData) => void;
   isNew?: boolean;
+  allGoogleTasks?: any[] | null;
+  globalTasklistId?: string;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -169,7 +171,7 @@ const formatTimeInput = (val: string) => {
   return digits;
 };
 
-export function LogModal({ log, loading, onClose, onUpdate, isNew }: LogModalProps) {
+export function LogModal({ log, loading, onClose, onUpdate, isNew, allGoogleTasks, globalTasklistId }: LogModalProps) {
   const [deskripsi, setDeskripsi] = useState(log?.deskripsi || "");
   const [catatan, setCatatan] = useState(log?.catatan || "");
   const [tautan, setTautan] = useState(log?.tautan || "");
@@ -214,6 +216,14 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew }: LogModalPro
 
   // Fetch all tasks for picker
   const fetchAllTasks = useCallback(async () => {
+    if (allGoogleTasks) {
+      setAllTasks(allGoogleTasks);
+      if (globalTasklistId) setTasklistId(globalTasklistId);
+      setLinkedTaskDetails(allGoogleTasks.filter((t: any) => (log?.google_task_ids ?? []).includes(t.id)));
+      return;
+    }
+    
+    setTaskLoading(true);
     try {
       const res = await fetch("/api/google-tasks");
       const json = await res.json();
@@ -223,8 +233,10 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew }: LogModalPro
         // Resolve linked task details
         setLinkedTaskDetails(json.data.filter((t: any) => (log?.google_task_ids ?? []).includes(t.id)));
       }
-    } catch {}
-  }, [log?.google_task_ids]);
+    } catch {} finally {
+      setTaskLoading(false);
+    }
+  }, [log?.google_task_ids, allGoogleTasks, globalTasklistId]);
 
   useEffect(() => {
     if (!isNew && log?.id) fetchAllTasks();
@@ -603,6 +615,7 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew }: LogModalPro
                   <h3 className="text-[10px] font-bold text-muted-foreground mb-2 uppercase tracking-widest flex items-center gap-1.5">
                     <CheckSquare size={10} />
                     Tasks Terkait
+                    {taskLoading && <Loader2 size={10} className="animate-spin text-primary" />}
                   </h3>
 
                   {/* Linked tasks list */}

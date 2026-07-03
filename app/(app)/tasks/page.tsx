@@ -38,8 +38,9 @@ export default function TasksPage() {
   const [saving, setSaving] = useState(false);
   const newTitleRef = useRef<HTMLInputElement>(null);
 
-  // Global linked tasks
+  // Global linked tasks and logs map
   const [globalLinkedIds, setGlobalLinkedIds] = useState<Set<string>>(new Set());
+  const [globalLinkedLogsMap, setGlobalLinkedLogsMap] = useState<Record<string, any[]>>({});
 
   // Detail inline accordion
   const [selectedTask, setSelectedTask] = useState<GTask | null>(null);
@@ -59,7 +60,7 @@ export default function TasksPage() {
     try {
       const [resTasks, resLinked] = await Promise.all([
         fetch("/api/google-tasks"),
-        fetch("/api/google-tasks/linked-ids")
+        fetch("/api/google-tasks/linked-logs-all")
       ]);
       const jsonTasks = await resTasks.json();
       if (!resTasks.ok) throw new Error(jsonTasks.error);
@@ -69,7 +70,19 @@ export default function TasksPage() {
       
       if (resLinked.ok) {
         const jsonLinked = await resLinked.json();
-        setGlobalLinkedIds(new Set(jsonLinked.data ?? []));
+        const logsMap: Record<string, any[]> = {};
+        const ids = new Set<string>();
+        
+        (jsonLinked.data ?? []).forEach((log: any) => {
+          (log.google_task_ids || []).forEach((tid: string) => {
+            ids.add(tid);
+            if (!logsMap[tid]) logsMap[tid] = [];
+            logsMap[tid].push(log);
+          });
+        });
+        
+        setGlobalLinkedIds(ids);
+        setGlobalLinkedLogsMap(logsMap);
       }
     } catch (err: any) {
       setError(err.message);
@@ -174,15 +187,7 @@ export default function TasksPage() {
     setDetailNotes(task.notes ?? "");
     setDetailDue(task.due ? task.due.split("T")[0] : "");
     setDetailDirty(false);
-    setLinkedLogs([]);
-    
-    // Fetch linked logs
-    setLinkedLoading(true);
-    try {
-      const res = await fetch(`/api/google-tasks/${task.id}/linked-logs`);
-      const json = await res.json();
-      if (res.ok) setLinkedLogs(json.data ?? []);
-    } catch {}
+    setLinkedLogs(globalLinkedLogsMap[task.id] || []);
     setLinkedLoading(false);
   };
 
@@ -337,7 +342,7 @@ export default function TasksPage() {
                   </button>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{task.title.replace(/^⭐\s*/, "")}</p>
-                    {!isSelected && (task.notes || task.due || globalLinkedIds.has(task.id)) && (
+                    {!isSelected && (task.notes || task.due) && (
                       <div className="flex items-center gap-2 mt-0.5">
                         {task.notes && <span className="text-[11px] text-muted-foreground truncate max-w-[200px]">{task.notes}</span>}
                         {task.notes && task.due && <span className="text-muted-foreground/40 text-[10px]">·</span>}
@@ -346,19 +351,22 @@ export default function TasksPage() {
                             {format(new Date(task.due), "d MMM yyyy", { locale: idLocale })}
                           </span>
                         )}
-                        {((task.notes || task.due) && globalLinkedIds.has(task.id)) && <span className="text-muted-foreground/40 text-[10px]">·</span>}
-                        {globalLinkedIds.has(task.id) && (
-                          <span className="flex items-center gap-1 text-[11px] text-primary/70 font-medium bg-primary/5 px-1.5 py-0.5 rounded-md border border-primary/10">
-                            <FileText size={10} /> Terkait Log
-                          </span>
-                        )}
                       </div>
                     )}
                   </div>
-                  <button onClick={e => handleStar(e, task)} className={cn("flex-shrink-0 p-1.5 rounded-lg transition-all", isTaskStarred(task.title) ? "text-yellow-500" : "text-muted-foreground/0 group-hover:text-muted-foreground/50 hover:!text-yellow-400")} title={isTaskStarred(task.title) ? "Hapus bintang" : "Beri bintang"}>
-                    <Star size={16} fill={isTaskStarred(task.title) ? "currentColor" : "none"} />
-                  </button>
-                  {isSelected ? <ChevronDown size={16} className="text-muted-foreground flex-shrink-0" /> : <ChevronRight size={16} className="text-muted-foreground/30 group-hover:text-muted-foreground/60 flex-shrink-0" />}
+                  
+                  {/* Indicators and Actions */}
+                  <div className="flex items-center gap-2">
+                    {globalLinkedIds.has(task.id) && !isSelected && (
+                      <span className="flex items-center gap-1 text-[11px] text-primary/70 font-medium bg-primary/5 px-1.5 py-0.5 rounded-md border border-primary/10">
+                        <FileText size={10} /> <span className="hidden sm:inline">Terkait Log</span>
+                      </span>
+                    )}
+                    <button onClick={e => handleStar(e, task)} className={cn("flex-shrink-0 p-1.5 rounded-lg transition-all", isTaskStarred(task.title) ? "text-yellow-500" : "text-muted-foreground/0 group-hover:text-muted-foreground/50 hover:!text-yellow-400")} title={isTaskStarred(task.title) ? "Hapus bintang" : "Beri bintang"}>
+                      <Star size={16} fill={isTaskStarred(task.title) ? "currentColor" : "none"} />
+                    </button>
+                    {isSelected ? <ChevronDown size={16} className="text-muted-foreground flex-shrink-0" /> : <ChevronRight size={16} className="text-muted-foreground/30 group-hover:text-muted-foreground/60 flex-shrink-0" />}
+                  </div>
                 </div>
 
                 {/* Accordion Body */}
