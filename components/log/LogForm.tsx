@@ -27,7 +27,7 @@ export function LogForm({ initialData, onSuccess }: LogFormProps) {
   const [deskripsi, setDeskripsi] = useState(initialData?.deskripsi || "");
   const [catatan, setCatatan]   = useState(initialData?.catatan || "");
   const [tautan, setTautan]     = useState(initialData?.tautan || "");
-  const [files, setFiles]       = useState<LogFile[]>(initialData?.log_files || []);
+  const [files, setFiles]       = useState<LogFile[]>([]);
   const [savedLogId, setSavedLogId] = useState<string | null>(initialData?.id || null);
   const [saving, setSaving]     = useState(false);
 
