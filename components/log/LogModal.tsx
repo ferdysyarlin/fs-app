@@ -577,7 +577,7 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew, allGoogleTask
               </div>
 
               {/* Program & Jam Masuk/Pulang */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {/* Jam Masuk */}
                 <div>
                   <h3 className="text-[10px] font-bold text-muted-foreground mb-1.5 uppercase tracking-widest">Jam Masuk</h3>
@@ -867,19 +867,19 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew, allGoogleTask
                         </div>
                       </div>
                     )}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mt-2">
                       <button
                         onClick={() => { setShowTaskPicker(v => !v); setShowNewTaskForm(false); }}
-                        className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors"
+                        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors font-medium"
                       >
-                        <Plus size={12} /> Tautkan Task
+                        <Plus size={14} /> Tautkan Task
                       </button>
-                      <span className="text-muted-foreground/40 text-[10px]">·</span>
+                      <span className="text-muted-foreground/40 text-xs mx-1">·</span>
                       <button
                         onClick={() => { setShowNewTaskForm(v => !v); setShowTaskPicker(false); setTimeout(() => newTaskTitleRef.current?.focus(), 50); }}
-                        className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors"
+                        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors font-medium"
                       >
-                        <Plus size={12} /> Buat & Tautkan
+                        <Plus size={14} /> Buat & Tautkan
                       </button>
                     </div>
                   </div>

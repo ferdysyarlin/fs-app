@@ -457,8 +457,8 @@ export default function LogListPage() {
                           </div>
                           <div className="flex items-center gap-1">
                             {log.dokumen && log.dokumen.length > 0 && (
-                              <button className="p-1.5 rounded hover:bg-background text-muted-foreground hover:text-primary transition-colors cursor-default" title={`${log.dokumen.length} Dokumen`}>
-                                <Paperclip size={14} />
+                              <button className="p-2 rounded hover:bg-background text-muted-foreground hover:text-primary transition-colors cursor-default" title={`${log.dokumen.length} Dokumen`}>
+                                <Paperclip size={16} />
                               </button>
                             )}
                             {log.tautan && (
@@ -467,36 +467,36 @@ export default function LogListPage() {
                                 target="_blank"
                                 rel="noreferrer"
                                 onClick={(e) => e.stopPropagation()}
-                                className="p-1.5 rounded hover:bg-background text-muted-foreground hover:text-primary transition-colors"
+                                className="p-2 rounded hover:bg-background text-muted-foreground hover:text-primary transition-colors"
                                 title="Buka Tautan"
                               >
-                                <Link2 size={14} />
+                                <Link2 size={16} />
                               </a>
                             )}
                             <button
                               className={cn(
-                                "p-1.5 rounded hover:bg-background transition-colors",
+                                "p-2 rounded hover:bg-background transition-colors",
                                 log.is_pinned ? "text-red-500 hover:text-red-600" : "text-muted-foreground hover:text-foreground"
                               )}
                               onClick={(e) => togglePin(e, log)}
                               title={log.is_pinned ? "Lepas Pin" : "Pin Log"}
                             >
-                              <Pin size={14} className={log.is_pinned ? "fill-current" : ""} />
+                              <Pin size={16} className={log.is_pinned ? "fill-current" : ""} />
                             </button>
                             {log.google_task_ids && log.google_task_ids.length > 0 && (
-                              <button className="p-1.5 rounded hover:bg-background text-primary transition-colors cursor-default" title={`${log.google_task_ids.length} Task Terkait`}>
-                                <CheckSquare size={14} />
+                              <button className="p-2 rounded hover:bg-background text-primary transition-colors cursor-default" title={`${log.google_task_ids.length} Task Terkait`}>
+                                <CheckSquare size={16} />
                               </button>
                             )}
                             <button
-                              className="p-1.5 rounded hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors"
+                              className="p-2 rounded hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleDelete(e, log.id);
                               }}
                               title="Hapus"
                             >
-                              <Trash2 size={14} />
+                              <Trash2 size={16} />
                             </button>
                           </div>
                         </div>
