@@ -41,6 +41,7 @@ Aplikasi ini dibangun untuk kebutuhan pencatatan aktivitas kerja harian secara p
 | Styling | Tailwind CSS v4 + Custom CSS Variables |
 | Database | Supabase (PostgreSQL) |
 | Auth | Supabase Auth (Google OAuth) |
+| Integrasi Eksternal | Google Tasks API (REST v1) |
 | File Storage Log | Google Drive via Google Apps Script (GAS) |
 | File Storage Profil | Supabase Storage (bucket: `fs-storage`) |
 | Image Compression | browser-image-compression |
@@ -84,14 +85,22 @@ Aplikasi ini dibangun untuk kebutuhan pencatatan aktivitas kerja harian secara p
 - **Upload foto profil**: avatar bulat, dikompres otomatis, disimpan ke Supabase Storage (`fs-storage/avatars/`)
 - Foto profil tersinkron ke avatar Sidebar dan user metadata Supabase Auth
 
-### 5.5 Halaman Publik (vCard)
+### 5.5 Integrasi Google Tasks
+
+- Manajemen task (To-Do) pribadi langsung terhubung ke akun Google Tasks pengguna (tersinkronisasi dua arah).
+- Dapat membuat, mengedit, menyelesaikan, dan menghapus task langsung dari dalam aplikasi.
+- Tampilan daftar task dapat diperluas (*accordion*) untuk melihat catatan dan tenggat waktu (*due date*).
+- Indikator Prioritas (Bintang): Menggunakan trik penambahan emoji ⭐ pada judul task agar dapat tersinkronisasi lintas platform.
+- **Tautan ke Log Kerja:** Task dapat dikaitkan dengan Log Kerja. Modal Log Kerja menampilkan task terkait secara instan menggunakan mekanisme *background prefetching*, memungkinkan *inline editing* task secara langsung dari dalam form Log Kerja.
+
+### 5.6 Halaman Publik (vCard)
 
 - Halaman publik di `/` yang menampilkan kartu profil digital Ferdy Syarlin
 - Dapat diakses tanpa login
 - Mendukung tema terang/gelap
 
 > [!NOTE]
-> Fitur **Kinerja**, **Arsip**, **Pencarian global**, **Integrasi Google Calendar/Tasks**, dan **Internal Link (Obsidian-like)** telah dihapus dari scope aktif. Dapat dikembangkan kembali di versi mendatang.
+> Fitur **Kinerja**, **Arsip**, **Pencarian global**, dan **Internal Link (Obsidian-like)** telah dihapus dari scope aktif. Dapat dikembangkan kembali di versi mendatang.
 
 ---
 
@@ -205,11 +214,13 @@ Next.js (Vercel)
 │   │   │   ├── @modal/   → parallel route slot modal
 │   │   │   ├── [id]/     → detail log
 │   │   │   └── new/      → form tambah log baru
+│   │   ├── tasks/        → daftar tugas tersinkron Google Tasks
 │   │   ├── laporan/      → laporan WFH & bulanan (cetak A4)
 │   │   └── settings/     → profil pegawai + foto profil
 │   └── api/
 │       ├── log/          → CRUD log kerja
 │       ├── log/[id]/     → detail, update, hapus log
+│       ├── google-tasks/ → sinkronisasi dengan Google Tasks API
 │       ├── files/        → upload & hapus file Drive
 │       ├── image/[id]/   → proxy streaming gambar Drive
 │       ├── tags/         → daftar semua tag
@@ -317,7 +328,8 @@ Next.js (Vercel)
 | **Fase 4** | Pengaturan profil + upload foto profil | ✅ Selesai |
 | **Fase 5** | Mobile responsive + dark mode | ✅ Selesai |
 | **Fase 6** | Deployment Vercel + GitHub CI/CD | ✅ Selesai (3 Juli 2026) |
-| **Fase 7** *(opsional)* | Modul kinerja, arsip, internal link | 🔲 Belum dimulai |
+| **Fase 7** | Integrasi Google Tasks (Sinkronisasi & Tautan ke Log) | ✅ Selesai |
+| **Fase 8** *(opsional)* | Modul kinerja, arsip, internal link | 🔲 Belum dimulai |
 
 ---
 

@@ -41,6 +41,7 @@ Aplikasi **FerdySyarlin** adalah aplikasi produktivitas personal berbasis web un
 | Ikon | [Lucide React](https://lucide.dev/) |
 | Toast | [Sonner](https://sonner.emilkowal.ski/) |
 | Auth | Supabase Auth (OAuth Google) |
+| Integrasi API | Google Tasks API (REST v1) |
 | Theme | [next-themes](https://github.com/pacocoursey/next-themes) |
 | Image Compression | [browser-image-compression](https://www.npmjs.com/package/browser-image-compression) |
 | File Storage Log | Google Drive via Google Apps Script (GAS) Web App |
@@ -61,11 +62,13 @@ fs-app/
 │   │   │   ├── @modal/      # Parallel route slot untuk modal log
 │   │   │   ├── [id]/        # Halaman detail log
 │   │   │   └── new/         # Form log baru
+│   │   ├── tasks/           # Manajemen Tasks (To-Do) tersinkron Google Tasks
 │   │   ├── laporan/         # Halaman Laporan (WFH & Bulanan) + Cetak Preview
 │   │   └── settings/        # Pengaturan profil pegawai untuk laporan
 │   ├── api/                 # API Routes (Next.js Route Handlers)
 │   │   ├── log/             # CRUD Log Kerja
 │   │   ├── log/[id]/        # Detail, Update, Delete log
+│   │   ├── google-tasks/    # API endpoints sinkronisasi Google Tasks
 │   │   ├── settings/        # CRUD tag
 │   │   ├── files/           # Upload/delete file via Google Apps Script (GAS)
 │   │   ├── image/[id]/      # Proxy endpoint untuk streaming gambar dari Google Drive
@@ -108,6 +111,7 @@ fs-app/
 | `tags` | `text[]` | Array tag/label |
 | `gambar` | `jsonb` | Array objek gambar (JPG/PNG/WebP) |
 | `dokumen` | `jsonb` | Array objek dokumen (PDF/Word/Excel/PPT) |
+| `google_task_ids` | `text[]` | Array ID task dari Google Tasks yang ditautkan ke log ini |
 | `jam_masuk` | `text` | Jam masuk kerja, format `HH:MM` (contoh: `07:30`) |
 | `jam_pulang` | `text` | Jam pulang kerja, format `HH:MM` (contoh: `16:00`) |
 | `created_at` | `timestamptz` | Otomatis |
@@ -251,6 +255,14 @@ Menggantikan `window.confirm()` bawaan browser dengan dialog kustom berdesain ko
 - Di **mobile**: Muncul sebagai **full-page** (layar penuh, seperti berpindah halaman).
 - **Jam Masuk & Pulang**: Input text dengan format otomatis `HH:MM`. Mengetik `0730` akan otomatis diformat menjadi `07:30`.
 - **Isi Otomatis Jam**: Saat membuat log baru, jam masuk otomatis terisi `07:30`, jam pulang terisi `16:00` (Senin-Kamis) atau `16:30` (Jumat) berdasarkan tanggal yang dipilih.
+- **Tautan Task (Google Tasks)**: Task yang ditautkan ke log ini akan muncul secara instan di bagian bawah form berkat mekanisme *background prefetching*. Pengguna dapat mengedit task (judul, catatan, tenggat waktu) atau menandainya selesai langsung dari dalam modal log.
+
+### `/tasks` — Daftar Tasks (To-Do)
+
+- Menampilkan daftar task yang tersinkron langsung dengan Google Tasks pengguna.
+- Layout full-width (100%) dengan UI *accordion* yang akan terbuka memunculkan detail saat diklik.
+- Menggunakan *Floating Action Button (FAB)* untuk menambah task baru atau *refresh* data.
+- **Indikator Bintang**: Task berbintang (Prioritas) disinkronisasikan menggunakan *prefix* emoji ⭐ pada judul task agar terbaca di lintas platform (aplikasi web maupun aplikasi mobile Google Tasks).
 
 ### `/settings` — Pengaturan
 
@@ -275,6 +287,9 @@ Semua route ada di `app/api/`:
 | `/api/log/[id]` | GET | Detail log (termasuk kolom `gambar`, `dokumen`, `jam_masuk`, `jam_pulang`) |
 | `/api/log/[id]` | PUT | Update log |
 | `/api/log/[id]` | DELETE | Hapus log |
+| `/api/google-tasks` | GET/POST/PUT | Ambil daftar, buat, dan update task dari Google Tasks API |
+| `/api/google-tasks/link` | POST/DELETE | Tautkan atau lepas tautan antara Task dan Log Kerja |
+| `/api/google-tasks/linked-logs-all` | GET | Ambil mapping *prefetch* semua log yang memiliki tautan task untuk *instant loading* |
 | `/api/settings` | GET/POST/PUT/DELETE | CRUD tag |
 | `/api/files` | POST | Upload gambar/dokumen ke Google Drive, update JSONB `gambar`/`dokumen` di `log_kerja` |
 | `/api/files` | DELETE | Hapus file dari Drive, update JSONB di `log_kerja` |
@@ -344,6 +359,7 @@ File: [`components/shared/Sidebar.tsx`](../components/shared/Sidebar.tsx)
 | Menu | Route | Ikon |
 |---|---|---|
 | Log Kerja | `/log` | FileText |
+| Tasks | `/tasks` | CheckSquare |
 | Laporan | `/laporan` | BarChart2 |
 | Pengaturan | `/settings` | Settings |
 
