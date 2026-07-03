@@ -40,12 +40,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ data, error: null, count });
 }
 
-export async function GET_TAGS() {
-  const supabase = await createAdminClient();
-  const { data, error } = await supabase.rpc("get_all_tags");
-  if (error) return NextResponse.json({ error: error.message, data: null }, { status: 500 });
-  return NextResponse.json({ data, error: null });
-}
+
 
 export async function POST(request: NextRequest) {
   const supabase = await createAdminClient();
