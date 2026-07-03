@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     }, { status: 400 });
   }
 
-  const id = `LOG-${format(new Date(), "yyyyMMddHHmmss")}`;
+  const id = `KINERJA-${format(new Date(), "yyyyMMddHHmmss")}`;
 
   const { data: log, error } = await supabase
     .from("log_kerja")
