@@ -96,7 +96,7 @@ export default function LogListPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [bulanFilter, setBulanFilter] = useState("");
   const [tahunFilter, setTahunFilter] = useState("");
-  const [tanggalFilter, setTanggalFilter] = useState("");
+  const [tanggalFilter, setTanggalFilter] = useState(searchParams.get("date") || "");
 
   // Debounce search
   useEffect(() => {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
@@ -264,13 +265,16 @@ export default function LaporanPage() {
                                 />
                               </td>
                               <td className="px-3 py-2 font-medium whitespace-nowrap">
-                                {format(f.date, "dd MMM yyyy", { locale: idLocale })}
+                                <Link href={`/log?date=${f.dateStr}`} className="text-primary hover:underline">
+                                  {format(f.date, "dd MMM yyyy", { locale: idLocale })}
+                                </Link>
                               </td>
                               <td className="px-3 py-2">
                                 <Input 
                                   value={f.jamMasuk} 
                                   onChange={(e) => updateItem(i, "jamMasuk", formatTimeInput(e.target.value))} 
                                   disabled={!f.checked}
+                                  readOnly
                                   className="h-8 px-2 w-16 text-center text-xs"
                                 />
                               </td>
@@ -279,6 +283,7 @@ export default function LaporanPage() {
                                   value={f.jamPulang} 
                                   onChange={(e) => updateItem(i, "jamPulang", formatTimeInput(e.target.value))} 
                                   disabled={!f.checked}
+                                  readOnly
                                   className="h-8 px-2 w-16 text-center text-xs"
                                 />
                               </td>
@@ -296,6 +301,7 @@ export default function LaporanPage() {
                                   value={f.realisasi} 
                                   onChange={(e) => updateItem(i, "realisasi", e.target.value)} 
                                   disabled={!f.checked}
+                                  readOnly
                                   className="w-full h-20 bg-transparent border border-border/50 rounded-md p-1.5 text-xs outline-none focus:border-primary resize-none"
                                   placeholder={columnRealisasi + "..."}
                                 />
@@ -303,6 +309,7 @@ export default function LaporanPage() {
                                   value={f.link} 
                                   onChange={(e) => updateItem(i, "link", e.target.value)} 
                                   disabled={!f.checked}
+                                  readOnly
                                   placeholder="Link bukti (s.id/...)"
                                   className="w-full mt-1.5 h-16 bg-transparent border border-border/50 rounded-md p-1.5 text-[10px] outline-none focus:border-primary resize-none leading-tight"
                                 />
@@ -333,7 +340,9 @@ export default function LaporanPage() {
                                 onChange={(e) => updateItem(i, "checked", e.target.checked)}
                                 className="w-5 h-5 rounded border-border"
                               />
-                              <span className="text-sm">{format(f.date, "dd MMM yyyy", { locale: idLocale })}</span>
+                              <Link href={`/log?date=${f.dateStr}`} className="text-sm text-primary hover:underline">
+                                {format(f.date, "dd MMM yyyy", { locale: idLocale })}
+                              </Link>
                             </label>
                           </div>
                           
@@ -345,6 +354,7 @@ export default function LaporanPage() {
                                 value={f.jamMasuk} 
                                 onChange={(e) => updateItem(i, "jamMasuk", formatTimeInput(e.target.value))} 
                                 disabled={!f.checked}
+                                readOnly
                                 className="h-9 text-center text-sm"
                               />
                             </div>
@@ -354,6 +364,7 @@ export default function LaporanPage() {
                                 value={f.jamPulang} 
                                 onChange={(e) => updateItem(i, "jamPulang", formatTimeInput(e.target.value))} 
                                 disabled={!f.checked}
+                                readOnly
                                 className="h-9 text-center text-sm"
                               />
                             </div>
@@ -376,6 +387,7 @@ export default function LaporanPage() {
                               value={f.realisasi} 
                               onChange={(e) => updateItem(i, "realisasi", e.target.value)} 
                               disabled={!f.checked}
+                              readOnly
                               className="w-full h-24 bg-muted/30 border border-border/50 rounded-lg p-2.5 text-sm outline-none focus:border-primary resize-none mb-2"
                               placeholder={columnRealisasi + "..."}
                             />
@@ -383,6 +395,7 @@ export default function LaporanPage() {
                               value={f.link} 
                               onChange={(e) => updateItem(i, "link", e.target.value)} 
                               disabled={!f.checked}
+                              readOnly
                               placeholder="Link bukti (s.id/...)"
                               className="w-full h-16 bg-muted/30 border border-border/50 rounded-lg p-2 text-xs outline-none focus:border-primary resize-none leading-tight"
                             />
