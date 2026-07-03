@@ -210,7 +210,7 @@ export default function LogListPage() {
     }
   };
 
-  const totalPages = Math.ceil(total / PER_PAGE);
+
 
   // Group logs by Year for UI display
   const groupedLogs = logs.reduce((acc, log) => {
