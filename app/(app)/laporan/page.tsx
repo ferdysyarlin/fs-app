@@ -393,9 +393,10 @@ export default function LaporanPage() {
                     padding: 0 !important;
                   }
                   #print-document * { visibility: visible !important; }
-                  table, th, td { border: 1px solid black !important; }
-                  th { font-weight: bold; }
                 }
+                /* Memastikan html2canvas membaca border dengan benar */
+                #print-document table { border-collapse: collapse; width: 100%; }
+                #print-document th, #print-document td { box-sizing: border-box; }
               `}} />
 
               {/* Document Header */}
@@ -440,7 +441,7 @@ export default function LaporanPage() {
               {/* Main Report Table */}
               <table className="w-full border-collapse text-[11pt] mb-6 border border-black">
                 <thead>
-                  <tr className="bg-gray-100/50 leading-tight">
+                  <tr className="leading-tight">
                     <th className="border border-black px-2 py-1 w-px text-center align-middle font-semibold">No</th>
                     <th className="border border-black px-2 py-1 w-px whitespace-nowrap text-center align-middle font-semibold">Tanggal</th>
                     <th className="border border-black px-2 py-1 w-px whitespace-nowrap text-center align-middle font-semibold">Jam<br/>Masuk</th>
