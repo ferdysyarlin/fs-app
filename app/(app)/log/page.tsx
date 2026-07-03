@@ -30,7 +30,7 @@ export default function LogListPage() {
   const router = useRouter();
   const [modalLog, setModalLog] = useState<any>(null);
   const confirmDialog = useConfirm();
-  const [previewImg, setPreviewImg] = useState<{id: string; url: string; name: string; log?: any} | null>(null);
+  const [previewImg, setPreviewImg] = useState<{ id: string; url: string; name: string; log?: any } | null>(null);
   const [viewMode, setViewMode] = useState<"masonry" | "gallery">("masonry");
 
   // Open modal: change URL to /log?id=ID
@@ -66,10 +66,10 @@ export default function LogListPage() {
         // Fallback fetch if not in the current page of logs
         fetch(`/api/log/${mid}`)
           .then((r) => r.json())
-          .then((json) => { if(json.data) setModalLog(json.data); });
+          .then((json) => { if (json.data) setModalLog(json.data); });
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mid]);
 
   // Filters
@@ -89,7 +89,7 @@ export default function LogListPage() {
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     setMounted(true);
-    
+
     const params = new URLSearchParams({
       page: String(page),
       per_page: String(PER_PAGE),
@@ -146,7 +146,7 @@ export default function LogListPage() {
       const res = await fetch(`/api/log/${id}`, { method: "DELETE" });
       const json = await res.json();
       if (!res.ok || json.error) throw new Error(json.error || "Gagal menghapus");
-      
+
       toast.success("Log berhasil dihapus", { id: toastId });
     } catch (err: any) {
       // Rollback jika gagal
@@ -212,8 +212,8 @@ export default function LogListPage() {
           className="w-full h-8 pl-8 pr-3 rounded-full bg-background border border-border focus:border-primary focus:ring-1 focus:ring-primary outline-none text-xs transition-all"
         />
       </div>
-      <button 
-        onClick={() => setShowMobileFilter(!showMobileFilter)} 
+      <button
+        onClick={() => setShowMobileFilter(!showMobileFilter)}
         className={cn("w-8 h-8 flex items-center justify-center rounded-full transition-colors flex-shrink-0", showMobileFilter ? "bg-primary text-primary-foreground" : "bg-background border border-border text-foreground")}
       >
         <Filter size={14} />
@@ -238,7 +238,7 @@ export default function LogListPage() {
               className="w-full pl-9 pr-4 py-2 rounded-full bg-muted border-transparent focus:border-primary focus:ring-1 focus:ring-primary outline-none text-sm transition-all"
             />
           </div>
-          
+
           <div className="w-full md:w-auto flex flex-wrap gap-2 items-center">
             <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-auto h-9 text-xs rounded-full">
               <option value="">Semua Status</option>
@@ -250,8 +250,8 @@ export default function LogListPage() {
             </Select>
             <Select value={bulanFilter} onChange={(e) => setBulanFilter(e.target.value)} className="w-auto h-9 text-xs rounded-full">
               <option value="">Semua Bulan</option>
-              {Array.from({length: 12}).map((_, i) => (
-                <option key={i+1} value={i+1}>{new Date(0, i).toLocaleString('id', {month: 'long'})}</option>
+              {Array.from({ length: 12 }).map((_, i) => (
+                <option key={i + 1} value={i + 1}>{new Date(0, i).toLocaleString('id', { month: 'long' })}</option>
               ))}
             </Select>
             <Select value={tahunFilter} onChange={(e) => setTahunFilter(e.target.value)} className="w-auto h-9 text-xs rounded-full">
@@ -283,8 +283,8 @@ export default function LogListPage() {
             </Select>
             <Select value={bulanFilter} onChange={(e) => setBulanFilter(e.target.value)} className="h-9 text-xs">
               <option value="">Semua Bulan</option>
-              {Array.from({length: 12}).map((_, i) => (
-                <option key={i+1} value={i+1}>{new Date(0, i).toLocaleString('id', {month: 'short'})}</option>
+              {Array.from({ length: 12 }).map((_, i) => (
+                <option key={i + 1} value={i + 1}>{new Date(0, i).toLocaleString('id', { month: 'short' })}</option>
               ))}
             </Select>
             <Select value={tahunFilter} onChange={(e) => setTahunFilter(e.target.value)} className="h-9 text-xs">
@@ -324,7 +324,7 @@ export default function LogListPage() {
                 <div className="flex-1 border-t border-border mx-2"></div>
                 <span className="text-[10px] lg:text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-md">{yearLogs.length} Log</span>
               </div>
-              
+
               <div className={cn(
                 viewMode === "masonry"
                   ? "columns-2 lg:columns-3 xl:columns-4 gap-2 lg:gap-4 space-y-2 lg:space-y-4"
@@ -338,9 +338,9 @@ export default function LogListPage() {
                   >
                     <Card className={cn("hover:shadow-md transition-shadow group overflow-hidden border-2", getCardBgColor(log.status))}>
                       {log.gambar && log.gambar.length > 0 && (
-                        <div className={cn("grid gap-0.5 bg-background", 
-                          log.gambar.length === 1 ? 'grid-cols-1' : 
-                          log.gambar.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
+                        <div className={cn("grid gap-0.5 bg-background",
+                          log.gambar.length === 1 ? 'grid-cols-1' :
+                            log.gambar.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
                         )}>
                           {log.gambar.slice(0, 3).map((img: any, idx: number) => (
                             <div
@@ -351,10 +351,10 @@ export default function LogListPage() {
                                 setPreviewImg({ id: img.id, url: img.url, name: img.name, log });
                               }}
                             >
-                              <img 
-                                src={`/api/image/${img.id}`} 
-                                alt={img.name} 
-                                className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-300" 
+                              <img
+                                src={`/api/image/${img.id}`}
+                                alt={img.name}
+                                className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-300"
                               />
                               <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/30 transition-colors flex items-center justify-center">
                                 <Eye size={18} className="text-white opacity-0 group-hover/img:opacity-100 transition-opacity" />
@@ -373,8 +373,8 @@ export default function LogListPage() {
                           <Calendar size={10} className="lg:w-3 lg:h-3" />
                           {formatDateShort(log.tanggal)}
                         </div>
-                        
-                        <div className="text-[10px] lg:text-xs text-foreground leading-relaxed whitespace-pre-wrap">
+
+                        <div className="text-xs lg:text-xs text-foreground leading-relaxed whitespace-pre-wrap">
                           {log.deskripsi || <span className="italic opacity-50">Tanpa deskripsi</span>}
                         </div>
 
@@ -409,8 +409,8 @@ export default function LogListPage() {
                             <button className="p-1.5 rounded hover:bg-background text-muted-foreground hover:text-foreground transition-colors" title="Pin (Coming Soon)">
                               <Pin size={14} />
                             </button>
-                            <button 
-                              className="p-1.5 rounded hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors" 
+                            <button
+                              className="p-1.5 rounded hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleDelete(e, log.id);
@@ -447,10 +447,10 @@ export default function LogListPage() {
                           <span className="text-white text-[9px] font-medium leading-tight">{formatDateShort(item.log.tanggal)}</span>
                           <span className={cn("text-[8px] font-bold uppercase tracking-wider mt-0.5",
                             item.log.status === 'Hadir' ? 'text-green-400' :
-                            item.log.status === 'Lembur' ? 'text-yellow-400' :
-                            item.log.status === 'Dinas' ? 'text-purple-400' :
-                            item.log.status === 'Cuti' ? 'text-blue-400' :
-                            item.log.status === 'Sakit' ? 'text-red-400' : 'text-white/80'
+                              item.log.status === 'Lembur' ? 'text-yellow-400' :
+                                item.log.status === 'Dinas' ? 'text-purple-400' :
+                                  item.log.status === 'Cuti' ? 'text-blue-400' :
+                                    item.log.status === 'Sakit' ? 'text-red-400' : 'text-white/80'
                           )}>{item.log.status}</span>
                         </div>
                       </div>
@@ -480,21 +480,21 @@ export default function LogListPage() {
       {/* Floating Action Buttons */}
       <div className="fixed bottom-6 right-6 flex flex-col gap-2 z-30">
         {/* Toggle View Mode */}
-        <button 
+        <button
           title={viewMode === "masonry" ? "Beralih ke Gallery" : "Beralih ke Masonry"}
           onClick={() => setViewMode(v => v === "masonry" ? "gallery" : "masonry")}
           className="w-10 h-10 rounded-full bg-background border border-border shadow-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:scale-110 transition-all"
         >
           {viewMode === "masonry" ? <LayoutGrid size={16} /> : <LayoutDashboard size={16} />}
         </button>
-        <button 
+        <button
           title="Refresh"
           onClick={fetchLogs}
           className="w-10 h-10 rounded-full bg-background border border-border shadow-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:scale-110 transition-transform"
         >
           <RefreshCw size={16} />
         </button>
-        <button 
+        <button
           title="Tambah Log"
           onClick={() => setModalLog({})}
           className="w-10 h-10 rounded-full bg-primary text-primary-foreground shadow-md shadow-primary/30 flex items-center justify-center hover:scale-110 hover:shadow-lg transition-all"
@@ -538,7 +538,7 @@ export default function LogListPage() {
             if (currentIndex === -1) return null;
             const hasPrev = currentIndex > 0;
             const hasNext = currentIndex < images.length - 1;
-            
+
             return (
               <>
                 {hasPrev && (
