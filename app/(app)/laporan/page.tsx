@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { toast } from "sonner";
-import { BarChart2, FileText, Loader2, Printer } from "lucide-react";
+import { BarChart2, FileText, Loader2, Printer, Download } from "lucide-react";
 import { format, eachDayOfInterval, endOfMonth, isFriday } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { createPortal } from "react-dom";
@@ -152,6 +152,43 @@ export default function LaporanPage() {
   const titleReport = isWfh ? "Rekapitulasi Pelaksanaan Work From Home" : "Laporan Kinerja Bulanan";
   const columnRealisasi = isWfh ? "Realisasi" : "Bukti Dukung";
 
+  const handleDownloadPdf = async () => {
+    if (!profil.nama_lengkap) {
+      toast.error("Data profil belum lengkap! Silakan isi di menu Pengaturan > Profil Laporan.");
+      return;
+    }
+    
+    setShowPreview(true);
+    const toastId = toast.loading("Menyiapkan dokumen...");
+    
+    setTimeout(async () => {
+      const element = document.getElementById("print-document");
+      if (!element) {
+        toast.error("Gagal menemukan dokumen.", { id: toastId });
+        return;
+      }
+      
+      try {
+        toast.loading("Mengonversi ke PDF...", { id: toastId });
+        const html2pdf = (await import("html2pdf.js" as any)).default;
+        
+        const opt = {
+          margin:       0,
+          filename:     `${titleReport} - ${monthLabel} ${tahun}.pdf`,
+          image:        { type: 'jpeg', quality: 0.98 },
+          html2canvas:  { scale: 2, useCORS: true },
+          jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        
+        await html2pdf().set(opt).from(element).save();
+        toast.success("PDF berhasil diunduh!", { id: toastId });
+      } catch (err) {
+        console.error(err);
+        toast.error("Gagal mengunduh PDF.", { id: toastId });
+      }
+    }, 500);
+  };
+
   return (
     <div className="p-6 w-full">
       {/* Title removed */}
@@ -286,6 +323,17 @@ export default function LaporanPage() {
       {/* Floating Action Button */}
       <div className="fixed bottom-6 right-6 z-30 flex flex-col gap-2">
         <button 
+          title="Download PDF"
+          onClick={handleDownloadPdf}
+          disabled={selectedItems.length === 0}
+          className={`w-10 h-10 rounded-full bg-blue-500 text-white shadow-md shadow-blue-500/30 flex items-center justify-center transition-all ${
+            selectedItems.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:scale-110 hover:shadow-lg"
+          }`}
+        >
+          <Download size={18} />
+        </button>
+
+        <button 
           title="Preview & Cetak"
           onClick={() => {
             if (!profil.nama_lengkap) {
@@ -314,8 +362,11 @@ export default function LaporanPage() {
               <Button variant="outline" onClick={() => setShowPreview(false)}>
                 Batal
               </Button>
-              <Button onClick={() => window.print()} className="gap-2">
+              <Button onClick={() => window.print()} className="gap-2" variant="secondary">
                 <Printer size={16} /> Cetak (Ctrl+P)
+              </Button>
+              <Button onClick={handleDownloadPdf} className="gap-2 bg-blue-500 hover:bg-blue-600 text-white">
+                <Download size={16} /> Unduh PDF
               </Button>
             </div>
           </div>
