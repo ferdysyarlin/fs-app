@@ -281,12 +281,12 @@ export default function LaporanPage() {
                       <table className="w-full text-sm text-left">
                         <thead className="bg-muted text-muted-foreground text-xs uppercase">
                           <tr>
-                            <th className="px-3 py-2 w-10 text-center">✓</th>
-                            <th className="px-3 py-2 whitespace-nowrap">Tanggal</th>
-                            <th className="px-3 py-2 w-20">Masuk</th>
-                            <th className="px-3 py-2 w-20">Pulang</th>
-                            <th className="px-3 py-2">Rencana Hasil Kerja</th>
-                            <th className="px-3 py-2">{columnRealisasi}</th>
+                            <th className="px-3 py-4 w-10 text-center">✓</th>
+                            <th className="px-3 py-4 whitespace-nowrap">Tanggal</th>
+                            <th className="px-3 py-4 w-20">Masuk</th>
+                            <th className="px-3 py-4 w-20">Pulang</th>
+                            <th className="px-3 py-4">Rencana Hasil Kerja</th>
+                            <th className="px-3 py-4">{columnRealisasi}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
