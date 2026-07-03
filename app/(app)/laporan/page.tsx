@@ -284,8 +284,9 @@ export default function LaporanPage() {
       </div>
 
       {/* Floating Action Button */}
-      <div className="fixed bottom-6 right-6 z-30">
-        <Button 
+      <div className="fixed bottom-6 right-6 z-30 flex flex-col gap-2">
+        <button 
+          title="Preview & Cetak"
           onClick={() => {
             if (!profil.nama_lengkap) {
               toast.error("Data profil belum lengkap! Silakan isi di menu Pengaturan > Profil Laporan.");
@@ -293,10 +294,12 @@ export default function LaporanPage() {
             setShowPreview(true);
           }}
           disabled={selectedItems.length === 0}
-          className="rounded-full shadow-lg h-14 px-6 gap-2 bg-primary hover:bg-primary/90 hover:scale-105 transition-all text-primary-foreground"
+          className={`w-10 h-10 rounded-full bg-primary text-primary-foreground shadow-md shadow-primary/30 flex items-center justify-center transition-all ${
+            selectedItems.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:scale-110 hover:shadow-lg"
+          }`}
         >
-          <Printer size={20} /> <span className="hidden sm:inline font-semibold">Preview & Cetak</span>
-        </Button>
+          <Printer size={18} />
+        </button>
       </div>
 
       {/* Print Preview Modal */}
