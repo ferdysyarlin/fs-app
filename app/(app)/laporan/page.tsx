@@ -199,9 +199,9 @@ export default function LaporanPage() {
 
       <div className="flex flex-col gap-6">
         {/* Top Controls */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex flex-row items-center justify-between gap-2 overflow-x-auto w-full pb-1 scrollbar-hide">
           {/* Horizontal Tabs (Capsule) */}
-          <div className="flex gap-2 bg-muted p-1 rounded-full">
+          <div className="flex gap-1 sm:gap-2 bg-muted p-1 rounded-full flex-shrink-0">
             {[
               { id: "wfh", label: "WFH" },
               { id: "bulanan", label: "Bulanan" },
@@ -209,7 +209,7 @@ export default function LaporanPage() {
               <button
                 key={t.id}
                 onClick={() => setActiveTab(t.id as any)}
-                className={`px-5 py-2 text-sm font-medium transition-all rounded-full ${
+                className={`px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition-all rounded-full ${
                   activeTab === t.id
                     ? "bg-background text-foreground shadow"
                     : "text-muted-foreground hover:text-foreground"
@@ -221,11 +221,11 @@ export default function LaporanPage() {
           </div>
 
           {/* Filter Bulan & Tahun */}
-          <div className="flex items-center gap-2">
-            <Select value={bulan} onChange={e => setBulan(e.target.value)} className="w-auto h-10 text-sm rounded-full bg-background border-border">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+            <Select value={bulan} onChange={e => setBulan(e.target.value)} className="w-auto h-8 sm:h-10 text-xs sm:text-sm rounded-full bg-background border-border">
               {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
             </Select>
-            <Select value={tahun} onChange={e => setTahun(e.target.value)} className="w-auto h-10 text-sm rounded-full bg-background border-border">
+            <Select value={tahun} onChange={e => setTahun(e.target.value)} className="w-auto h-8 sm:h-10 text-xs sm:text-sm rounded-full bg-background border-border">
               {years.map(y => <option key={y} value={y}>{y}</option>)}
             </Select>
           </div>
@@ -239,7 +239,8 @@ export default function LaporanPage() {
                   <div className="py-10 flex justify-center"><Loader2 className="animate-spin text-muted-foreground" /></div>
                 ) : (
                   <>
-                    <div className="border rounded-lg overflow-hidden bg-card overflow-x-auto">
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block border rounded-lg overflow-hidden bg-card overflow-x-auto">
                       <table className="w-full text-sm text-left">
                         <thead className="bg-muted text-muted-foreground text-xs uppercase">
                           <tr>
@@ -317,6 +318,82 @@ export default function LaporanPage() {
                           )}
                         </tbody>
                       </table>
+                    </div>
+
+                    {/* Mobile Card View */}
+                    <div className="md:hidden flex flex-col gap-4">
+                      {reportData.map((f, i) => (
+                        <div key={f.id} className={`border rounded-xl p-4 bg-card shadow-sm space-y-4 transition-colors ${!f.checked ? "opacity-50" : ""}`}>
+                          {/* Header: Checkbox & Date */}
+                          <div className="flex items-center justify-between border-b pb-3">
+                            <label className="flex items-center gap-2 font-medium cursor-pointer">
+                              <input 
+                                type="checkbox" 
+                                checked={f.checked} 
+                                onChange={(e) => updateItem(i, "checked", e.target.checked)}
+                                className="w-5 h-5 rounded border-border"
+                              />
+                              <span className="text-sm">{format(f.date, "dd MMM yyyy", { locale: idLocale })}</span>
+                            </label>
+                          </div>
+                          
+                          {/* Jam Masuk & Pulang */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <span className="text-[10px] font-bold text-muted-foreground block mb-1 uppercase tracking-widest">Jam Masuk</span>
+                              <Input 
+                                value={f.jamMasuk} 
+                                onChange={(e) => updateItem(i, "jamMasuk", formatTimeInput(e.target.value))} 
+                                disabled={!f.checked}
+                                className="h-9 text-center text-sm"
+                              />
+                            </div>
+                            <div>
+                              <span className="text-[10px] font-bold text-muted-foreground block mb-1 uppercase tracking-widest">Jam Pulang</span>
+                              <Input 
+                                value={f.jamPulang} 
+                                onChange={(e) => updateItem(i, "jamPulang", formatTimeInput(e.target.value))} 
+                                disabled={!f.checked}
+                                className="h-9 text-center text-sm"
+                              />
+                            </div>
+                          </div>
+                          
+                          {/* Textareas */}
+                          <div>
+                            <span className="text-[10px] font-bold text-muted-foreground block mb-1 uppercase tracking-widest">Rencana Hasil Kerja</span>
+                            <textarea 
+                              value={f.rencana} 
+                              onChange={(e) => updateItem(i, "rencana", e.target.value)} 
+                              disabled={!f.checked}
+                              className="w-full h-20 bg-muted/30 border border-border/50 rounded-lg p-2.5 text-sm outline-none focus:border-primary resize-none"
+                              placeholder="Rencana kerja..."
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-bold text-muted-foreground block mb-1 uppercase tracking-widest">{columnRealisasi}</span>
+                            <textarea 
+                              value={f.realisasi} 
+                              onChange={(e) => updateItem(i, "realisasi", e.target.value)} 
+                              disabled={!f.checked}
+                              className="w-full h-16 bg-muted/30 border border-border/50 rounded-lg p-2.5 text-sm outline-none focus:border-primary resize-none mb-2"
+                              placeholder={columnRealisasi + "..."}
+                            />
+                            <textarea 
+                              value={f.link} 
+                              onChange={(e) => updateItem(i, "link", e.target.value)} 
+                              disabled={!f.checked}
+                              placeholder="Link bukti (s.id/...)"
+                              className="w-full h-12 bg-muted/30 border border-border/50 rounded-lg p-2 text-xs outline-none focus:border-primary resize-none leading-tight"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                      {reportData.length === 0 && (
+                        <div className="py-10 text-center text-muted-foreground border rounded-lg border-dashed">
+                          Tidak ada data log kerja pada bulan ini.
+                        </div>
+                      )}
                     </div>
                   </>
                 )}
