@@ -41,6 +41,11 @@ export default function LaporanPage() {
   const [profil, setProfil] = useState<Record<string, string>>({});
   const [showPreview, setShowPreview] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [mobileHeaderNode, setMobileHeaderNode] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    setMobileHeaderNode(document.getElementById("mobile-header-center"));
+  }, []);
 
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
@@ -202,31 +207,58 @@ export default function LaporanPage() {
         {/* Top Controls */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 w-full">
           {/* Horizontal Tabs (Capsule) */}
-          <div className="flex bg-muted p-1 rounded-full w-full sm:w-auto">
-            {[
-              { id: "wfh", label: "WFH" },
-              { id: "bulanan", label: "Bulanan" },
-            ].map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setActiveTab(t.id as any)}
-                className={`flex-1 sm:flex-none px-4 sm:px-5 py-1.5 sm:py-2 text-sm font-medium transition-all rounded-full text-center ${
-                  activeTab === t.id
-                    ? "bg-background text-foreground shadow"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
+          <div className="hidden sm:block">
+            <div className="flex bg-muted p-1 rounded-full w-auto">
+              {[
+                { id: "wfh", label: "WFH" },
+                { id: "bulanan", label: "Bulanan" },
+              ].map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setActiveTab(t.id as any)}
+                  className={`px-5 py-2 text-sm font-medium transition-all rounded-full text-center ${
+                    activeTab === t.id
+                      ? "bg-background text-foreground shadow"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
           </div>
+          
+          {/* Mobile Portal for Tabs */}
+          {mobileHeaderNode && createPortal(
+            <div className="sm:hidden w-full px-2 flex justify-center">
+              <div className="flex bg-muted/60 p-1 rounded-full w-full max-w-[200px]">
+                {[
+                  { id: "wfh", label: "WFH" },
+                  { id: "bulanan", label: "Bulanan" },
+                ].map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setActiveTab(t.id as any)}
+                    className={`flex-1 px-2 py-1.5 text-[11px] font-medium transition-all rounded-full text-center ${
+                      activeTab === t.id
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>,
+            mobileHeaderNode
+          )}
 
           {/* Filter Bulan & Tahun */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Select value={bulan} onChange={e => setBulan(e.target.value)} className="flex-1 sm:w-auto h-10 text-sm rounded-full bg-background border-border">
+            <Select value={bulan} onChange={e => setBulan(e.target.value)} className="w-full sm:w-auto h-10 text-sm rounded-full bg-background border-border">
               {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
             </Select>
-            <Select value={tahun} onChange={e => setTahun(e.target.value)} className="flex-1 sm:w-auto h-10 text-sm rounded-full bg-background border-border">
+            <Select value={tahun} onChange={e => setTahun(e.target.value)} className="w-full sm:w-auto h-10 text-sm rounded-full bg-background border-border">
               {years.map(y => <option key={y} value={y}>{y}</option>)}
             </Select>
           </div>
