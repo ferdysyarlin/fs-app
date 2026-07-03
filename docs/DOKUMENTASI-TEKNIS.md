@@ -1,7 +1,7 @@
 # Dokumentasi Teknis – FerdySyarlin App
 
 > Dibuat: 30 Juni 2026  
-> Terakhir diperbarui: 1 Juli 2026 (refactor, upload foto profil, Supabase Storage, navigasi instan)
+> Terakhir diperbarui: 3 Juli 2026 (upgrade Next.js 15.5.20, deployment Vercel, fix parallel route & API route)
 
 ---
 
@@ -21,6 +21,7 @@
 12. [Sidebar & Navigasi](#sidebar--navigasi)
 13. [Tampilan Mobile (Responsive)](#tampilan-mobile-responsive)
 14. [Halaman Laporan](#halaman-laporan)
+15. [Deployment (Vercel + GitHub)](#deployment-vercel--github)
 
 ---
 
@@ -34,7 +35,7 @@ Aplikasi **FerdySyarlin** adalah aplikasi produktivitas personal berbasis web un
 
 | Layer | Teknologi |
 |---|---|
-| Framework | [Next.js 15](https://nextjs.org/) (App Router) |
+| Framework | [Next.js 15.5.20](https://nextjs.org/) (App Router) |
 | Backend / DB | [Supabase](https://supabase.com/) (PostgreSQL + Auth + Storage) |
 | Styling | Tailwind CSS v4 + Custom CSS Variables |
 | Ikon | [Lucide React](https://lucide.dev/) |
@@ -45,6 +46,8 @@ Aplikasi **FerdySyarlin** adalah aplikasi produktivitas personal berbasis web un
 | File Storage Log | Google Drive via Google Apps Script (GAS) Web App |
 | File Storage Profil | Supabase Storage (bucket: `fs-storage`) |
 | Date Utilities | [date-fns](https://date-fns.org/) |
+| Hosting | [Vercel](https://vercel.com) (production) |
+| Repository | [GitHub — ferdysyarlin/fs-app](https://github.com/ferdysyarlin/fs-app) |
 
 ---
 
@@ -55,14 +58,19 @@ fs-app/
 ├── app/
 │   ├── (app)/               # Layout utama dengan Sidebar (memerlukan login)
 │   │   ├── log/             # Daftar Log Kerja (masonry cards + modal)
+│   │   │   ├── @modal/      # Parallel route slot untuk modal log
+│   │   │   ├── [id]/        # Halaman detail log
+│   │   │   └── new/         # Form log baru
 │   │   ├── laporan/         # Halaman Laporan (WFH & Bulanan) + Cetak Preview
 │   │   └── settings/        # Pengaturan profil pegawai untuk laporan
 │   ├── api/                 # API Routes (Next.js Route Handlers)
 │   │   ├── log/             # CRUD Log Kerja
+│   │   ├── log/[id]/        # Detail, Update, Delete log
 │   │   ├── settings/        # CRUD tag
 │   │   ├── files/           # Upload/delete file via Google Apps Script (GAS)
 │   │   ├── image/[id]/      # Proxy endpoint untuk streaming gambar dari Google Drive
 │   │   ├── tags/            # Daftar semua tag
+│   │   ├── ping/            # Health check endpoint
 │   │   └── user-settings/   # CRUD pengaturan profil pegawai (key-value)
 │   ├── auth/                # Callback OAuth Supabase
 │   ├── login/               # Halaman Login
@@ -71,12 +79,14 @@ fs-app/
 ├── components/
 │   ├── ui/                  # Komponen UI dasar (Button, Card, Input, dll)
 │   ├── shared/              # Komponen bersama (Sidebar)
-│   ├── log/                 # Komponen khusus Log (LogModal)
+│   ├── log/                 # Komponen khusus Log (LogModal, LogForm, FileUploader, dll)
 │   └── providers/           # Context providers (ConfirmProvider)
 ├── lib/
 │   ├── supabase/            # Client/server Supabase helpers
 │   └── utils.ts             # Utility functions (cn, formatDate, dll)
 ├── types/                   # TypeScript type definitions
+├── supabase/
+│   └── migrations/          # SQL migration scripts
 └── docs/                    # Dokumentasi proyek (folder ini)
 ```
 
@@ -143,7 +153,7 @@ Label/tag bebas yang dapat ditambahkan ke log kerja.
 - `tag` — Tag/label kustom (satu-satunya tabel master yang tersisa)
 
 > [!NOTE]
-> **Tabel `kategori`, `program`, `log_kerja_link`, `kinerja_indikator`, `kinerja_realisasi`, dan `laporan_bulanan` telah dihapus.** Gunakan script SQL di [drop_kategori_program.sql](../drop_kategori_program.sql) untuk menjalankan migrasi di Supabase.
+> **Tabel `kategori`, `program`, `log_kerja_link`, `kinerja_indikator`, `kinerja_realisasi`, dan `laporan_bulanan` telah dihapus.**
 
 ### Tabel: `user_settings`
 
@@ -270,8 +280,12 @@ Semua route ada di `app/api/`:
 | `/api/files` | DELETE | Hapus file dari Drive, update JSONB di `log_kerja` |
 | `/api/image/[id]` | GET | **Proxy** streaming gambar dari Google Drive (bypass CORS/embedding restriction) |
 | `/api/tags` | GET | Daftar semua tag yang tersedia |
+| `/api/ping` | GET | Health check endpoint |
 | `/api/user-settings` | GET | Ambil semua pengaturan profil pegawai |
 | `/api/user-settings` | PATCH | Simpan/update pengaturan profil pegawai |
+
+> [!IMPORTANT]
+> Next.js App Router hanya mengizinkan export HTTP method standar di Route Handler: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, `OPTIONS`. Jangan menggunakan nama fungsi kustom seperti `GET_TAGS` — ini akan menyebabkan build error di Vercel.
 
 ---
 
@@ -395,3 +409,62 @@ Halaman laporan menggunakan tampilan **tabbed interface** dengan dua tab: **Lapo
 ### Kolom Bukti Dukung
 
 Semua URL dari kolom `gambar` (JSONB) **dan** `dokumen` (JSONB) dikumpulkan, dipisahkan dengan baris baru, dan ditampilkan sebagai kumpulan link di kolom Bukti Dukung pada dokumen cetak.
+
+---
+
+## Deployment (Vercel + GitHub)
+
+### Repository
+
+| Atribut | Nilai |
+|---|---|
+| Platform | GitHub |
+| URL | https://github.com/ferdysyarlin/fs-app |
+| Branch default | `main` |
+| Git user (lokal) | `ferdysyarlin` / `syarlin.id@gmail.com` |
+
+> [!NOTE]
+> Git dikonfigurasi dengan identity **lokal** (`git config --local`) di folder `d:\fs-app` agar tidak bertabrakan dengan akun GitHub lain yang terdaftar secara global di mesin.
+
+### Hosting
+
+| Atribut | Nilai |
+|---|---|
+| Platform | Vercel |
+| Account | `ferdy-syarlins-projects` |
+| Auto-deploy | Ya — setiap push ke branch `main` |
+
+### Environment Variables (Wajib di Vercel)
+
+| Variable | Keterangan |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | URL project Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Anon key Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role key (server-side only) |
+| `GOOGLE_CLIENT_ID` | Google OAuth Client ID |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth Client Secret |
+| `GAS_WEBAPP_URL` | URL Google Apps Script Web App |
+| `NEXT_PUBLIC_APP_URL` | URL publik aplikasi (misal: `https://fs-app.vercel.app`) |
+
+> [!CAUTION]
+> **Jangan commit `.env.local` ke Git.** File ini sudah masuk `.gitignore`. Semua environment variables harus dimasukkan secara manual melalui **Vercel Dashboard → Settings → Environment Variables**.
+
+> [!IMPORTANT]
+> `NEXT_PUBLIC_APP_URL` di Vercel harus diisi URL production (bukan `http://localhost:3001`), karena digunakan sebagai redirect URI untuk Google OAuth callback.
+
+### Riwayat Perbaikan Deploy
+
+| Commit | Fix |
+|---|---|
+| `ce98171` | Tambah prop `modal` di `LogLayout` untuk parallel route `@modal` |
+| `d2706da` | Hapus export `GET_TAGS` yang tidak valid dari `app/api/log/route.ts` |
+| `bf4a68c` | Upgrade Next.js `15.3.4` → `15.5.20` (patch CVE-2025-66478) |
+
+### Alur Deploy Baru
+
+```
+git add .
+git commit -m "feat/fix: <deskripsi>"
+git push
+# → Vercel otomatis build & deploy dari branch main
+```

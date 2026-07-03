@@ -1,9 +1,9 @@
 # Product Requirements Document (PRD)
 ## Aplikasi Pencatatan Kerja Harian
 **Pemilik Produk:** Ferdy Syarlin  
-**Versi:** 2.0.0  
-**Tanggal:** 1 Juli 2026  
-**Status:** Active Development
+**Versi:** 2.1.0  
+**Tanggal:** 3 Juli 2026  
+**Status:** Production (deployed ke Vercel)
 
 ---
 
@@ -37,14 +37,15 @@ Aplikasi ini dibangun untuk kebutuhan pencatatan aktivitas kerja harian secara p
 
 | Layer | Teknologi |
 |---|---|
-| Frontend | Next.js 15 (App Router) |
+| Frontend | Next.js 15.5.20 (App Router) |
 | Styling | Tailwind CSS v4 + Custom CSS Variables |
 | Database | Supabase (PostgreSQL) |
 | Auth | Supabase Auth (Google OAuth) |
 | File Storage Log | Google Drive via Google Apps Script (GAS) |
 | File Storage Profil | Supabase Storage (bucket: `fs-storage`) |
 | Image Compression | browser-image-compression |
-| Hosting | Vercel / Lokal (Next.js dev server) |
+| Hosting | Vercel (production) |
+| Repository | GitHub — ferdysyarlin/fs-app |
 | Ikon | Lucide React |
 | Toast | Sonner |
 | Theme | next-themes (dark/light) |
@@ -94,130 +95,82 @@ Aplikasi ini dibangun untuk kebutuhan pencatatan aktivitas kerja harian secara p
 
 ---
 
-## 6. Skema Database (Supabase)
+## 6. Skema Database (Supabase) — Aktual
 
-### Tabel Master
-
-```sql
--- Kategori kegiatan
-CREATE TABLE kategori (
-  id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  nama     TEXT NOT NULL,
-  warna    TEXT,
-  icon     TEXT
-);
-
--- Program / Proyek
-CREATE TABLE program (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  nama        TEXT NOT NULL,
-  deskripsi   TEXT,
-  tahun       INTEGER,
-  aktif       BOOLEAN DEFAULT true
-);
-```
+> [!IMPORTANT]
+> Skema di bawah ini adalah skema **aktual yang berjalan saat ini**. Tabel-tabel lama (`kategori`, `program`, `log_files`, `kinerja_indikator`, `kinerja_realisasi`, `laporan_bulanan`, `log_kerja_link`) telah **dihapus** dari database.
 
 ### Tabel Inti
 
 ```sql
--- Log kerja harian
+-- Log kerja harian (skema aktual)
 CREATE TABLE log_kerja (
-  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tanggal       DATE NOT NULL,
-  judul         TEXT NOT NULL,
-  deskripsi     TEXT,
-  konten        JSONB,           -- isi editor Tiptap (format JSON)
-  konten_teks   TEXT,            -- versi plain text untuk full-text search
-  konten_fts    TSVECTOR         -- generated column untuk FTS PostgreSQL
-                GENERATED ALWAYS AS (to_tsvector('indonesian', coalesce(konten_teks, ''))) STORED,
-  kategori_id   UUID REFERENCES kategori(id),
-  program_id    UUID REFERENCES program(id),
-  durasi_jam    NUMERIC,
-  lokasi        TEXT,
-  created_at    TIMESTAMPTZ DEFAULT now(),
-  updated_at    TIMESTAMPTZ DEFAULT now()
-);
-
--- Index untuk full-text search
-CREATE INDEX log_kerja_fts_idx ON log_kerja USING GIN (konten_fts);
-
--- File lampiran per laporan
-CREATE TABLE log_files (
-  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  log_kerja_id    UUID REFERENCES log_kerja(id) ON DELETE CASCADE,
-  drive_file_id   TEXT NOT NULL,
-  drive_folder_id TEXT,
-  nama_file       TEXT NOT NULL,
-  tipe_file       TEXT,        -- 'image' | 'pdf' | 'docx' | dll
-  mime_type       TEXT,
-  ukuran_bytes    BIGINT,
-  url_preview     TEXT,
-  urutan          INTEGER,
-  created_at      TIMESTAMPTZ DEFAULT now()
+  id           TEXT PRIMARY KEY,             -- Format: LOG-{timestamp}
+  user_id      UUID REFERENCES auth.users,
+  tanggal      DATE NOT NULL,
+  status       TEXT,                         -- Hadir / Dinas / Lembur / Cuti / Sakit
+  deskripsi    TEXT,
+  catatan      TEXT,
+  tautan       TEXT,
+  tags         TEXT[],                       -- Array tag bebas
+  gambar       JSONB DEFAULT '[]',           -- Array objek gambar dari Google Drive
+  dokumen      JSONB DEFAULT '[]',           -- Array objek dokumen dari Google Drive
+  jam_masuk    TEXT,                         -- Format HH:MM
+  jam_pulang   TEXT,                         -- Format HH:MM
+  created_at   TIMESTAMPTZ DEFAULT now(),
+  updated_at   TIMESTAMPTZ DEFAULT now()
 );
 ```
 
-### Tabel Kinerja
+### Tabel Pengaturan
 
 ```sql
--- Indikator kinerja (SKP / target)
-CREATE TABLE kinerja_indikator (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  nama        TEXT NOT NULL,
-  target      TEXT,
-  satuan      TEXT,
-  bobot       NUMERIC,
-  periode     TEXT,
-  tahun       INTEGER,
-  program_id  UUID REFERENCES program(id)
-);
-
--- Realisasi kinerja (relasi ke log_kerja)
-CREATE TABLE kinerja_realisasi (
-  id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  log_kerja_id          UUID REFERENCES log_kerja(id) ON DELETE CASCADE,
-  kinerja_indikator_id  UUID REFERENCES kinerja_indikator(id),
-  kontribusi            TEXT,
-  nilai_realisasi       NUMERIC,
-  created_at            TIMESTAMPTZ DEFAULT now()
+-- Profil pegawai & penilai (key-value)
+CREATE TABLE user_settings (
+  key      TEXT NOT NULL,
+  value    TEXT,
+  user_id  UUID REFERENCES auth.users,
+  PRIMARY KEY (user_id, key)
 );
 ```
 
-### Tabel Ekstensi (Siap Dikembangkan)
+### Tabel Tag
 
 ```sql
--- Tag bebas per log kerja
+-- Tag/label kustom
 CREATE TABLE tag (
   id    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nama  TEXT NOT NULL
 );
+```
 
-CREATE TABLE log_kerja_tag (
-  log_kerja_id  UUID REFERENCES log_kerja(id) ON DELETE CASCADE,
-  tag_id        UUID REFERENCES tag(id) ON DELETE CASCADE,
-  PRIMARY KEY (log_kerja_id, tag_id)
-);
+### Format JSONB `gambar`
 
--- Internal link antar log kerja ([[...]] Obsidian-like)
-CREATE TABLE log_kerja_link (
-  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  dari_id       UUID REFERENCES log_kerja(id) ON DELETE CASCADE,  -- log yang menyebut
-  ke_id         UUID REFERENCES log_kerja(id) ON DELETE CASCADE,  -- log yang disebut
-  created_at    TIMESTAMPTZ DEFAULT now(),
-  UNIQUE (dari_id, ke_id)
-);
--- Query backlink: SELECT dari_id FROM log_kerja_link WHERE ke_id = '<target>'
+```json
+[
+  {
+    "id": "drive_file_id",
+    "name": "KINERJA-20260701.jpg",
+    "url": "https://drive.google.com/file/d/...",
+    "type": "image/jpeg",
+    "uploaded_at": "2026-07-01T00:00:00.000Z"
+  }
+]
+```
 
--- Rekap bulanan (generated)
-CREATE TABLE laporan_bulanan (
-  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  bulan           INTEGER,
-  tahun           INTEGER,
-  total_kegiatan  INTEGER,
-  total_jam       NUMERIC,
-  catatan         TEXT,
-  created_at      TIMESTAMPTZ DEFAULT now()
-);
+### Format JSONB `dokumen`
+
+```json
+[
+  {
+    "id": "drive_file_id",
+    "name": "LAPORAN.pdf",
+    "url": "https://drive.google.com/file/d/...",
+    "type": "application/pdf",
+    "size": 1048576,
+    "uploaded_at": "2026-07-01T10:00:00.000Z"
+  }
+]
 ```
 
 ---
@@ -239,28 +192,30 @@ My Drive/
 
 ---
 
-## 8. Arsitektur Aplikasi
+## 8. Arsitektur Aplikasi (Aktual)
 
 ```
 Next.js (Vercel)
 ├── app/
-│   ├── (auth)/           → halaman login Google OAuth
-│   ├── dashboard/        → ringkasan & statistik
-│   ├── log/
-│   │   ├── page.tsx      → daftar log kerja
-│   │   ├── [id]/         → detail log kerja
-│   │   └── new/          → form tambah log
-│   ├── kinerja/          → manajemen indikator & realisasi
-│   ├── laporan/          → rekap & export
-│   ├── arsip/            → data tahun lalu (Google Sheets)
-│   ├── search/           → full-text search seluruh log kerja
+│   ├── /                 → vCard publik (tanpa login)
+│   ├── login/            → halaman login Google OAuth
+│   ├── auth/callback/    → OAuth callback Supabase
+│   ├── (app)/            → layout dengan Sidebar (memerlukan login)
+│   │   ├── log/          → daftar log kerja (masonry + modal)
+│   │   │   ├── @modal/   → parallel route slot modal
+│   │   │   ├── [id]/     → detail log
+│   │   │   └── new/      → form tambah log baru
+│   │   ├── laporan/      → laporan WFH & bulanan (cetak A4)
+│   │   └── settings/     → profil pegawai + foto profil
 │   └── api/
 │       ├── log/          → CRUD log kerja
-│       ├── files/        → upload, hapus, replace file Drive
-│       ├── calendar/     → Google Calendar sync
-│       ├── tasks/        → Google Tasks sync
-│       ├── links/        → kelola internal link antar log
-│       └── ping/         → endpoint untuk cron-job.org
+│       ├── log/[id]/     → detail, update, hapus log
+│       ├── files/        → upload & hapus file Drive
+│       ├── image/[id]/   → proxy streaming gambar Drive
+│       ├── tags/         → daftar semua tag
+│       ├── settings/     → CRUD tag
+│       ├── user-settings/→ profil pegawai (key-value)
+│       └── ping/         → health check
 ```
 
 ---
@@ -269,81 +224,64 @@ Next.js (Vercel)
 
 ### Tambah Log Kerja
 ```
-1. Buka form → isi judul, tanggal, kategori, deskripsi, durasi
-2. Upload foto/dokumen → tersimpan ke Google Drive (folder bulan)
-3. Pilih indikator kinerja terkait → isi kontribusi & realisasi
-4. Simpan → data masuk ke Supabase (log_kerja + log_files + kinerja_realisasi)
+1. Klik FAB "+" → LogModal terbuka (isNew=true)
+2. Isi tanggal, status, deskripsi, jam masuk/pulang, tags
+3. Upload foto/dokumen → tersimpan ke Google Drive (folder bulan)
+4. Simpan → POST /api/log → log baru muncul di daftar tanpa reload
+```
+
+### Edit Log Kerja
+```
+1. Klik kartu log → LogModal terbuka (mode edit)
+2. URL berubah ke /log?id=LOG-xxx
+3. Edit field → tombol Simpan muncul otomatis (isDirty detection)
+4. Simpan → PUT /api/log/[id] → kartu diperbarui in-place
 ```
 
 ### Hapus File
 ```
 1. Klik hapus pada file tertentu
-2. API Route: ambil drive_file_id dari Supabase
-3. Hapus dari Google Drive (files.delete)
-4. Hapus row dari log_files di Supabase
+2. API DELETE /api/files: hapus dari Google Drive via GAS
+3. Update JSONB gambar/dokumen di log_kerja di Supabase
 ```
 
-### Hapus Laporan
+### Hapus Log
 ```
-1. Klik hapus laporan
-2. API Route: ambil semua drive_file_id terkait
-3. Hapus seluruh file dari Google Drive (batch)
-4. Hapus log_kerja → CASCADE hapus log_files & kinerja_realisasi
-```
-
-### Arsip Tahunan (Akhir Tahun)
-```
-1. Jalankan script export
-2. Ambil semua data tahun X dari Supabase
-3. Append ke Google Sheets (tab per tahun)
-4. Hapus data tahun X dari Supabase (opsional)
-```
-
-### Internal Link & Backlink (Obsidian-like)
-```
-Saat user menulis [[judul laporan]] di editor Tiptap:
-  → Autocomplete muncul → user pilih log yang dimaksud
-  → Saat simpan: parse semua [[...]] dalam konten
-  → Upsert ke tabel log_kerja_link (dari_id → ke_id)
-  → Hapus link lama yang sudah tidak ada di konten
-
-Saat buka detail log kerja:
-  → Query log_kerja_link WHERE ke_id = log ini
-  → Tampilkan daftar backlinks (laporan yang merujuk ke sini)
+1. Klik hapus log → dialog konfirmasi kustom (ConfirmProvider)
+2. API DELETE /api/log/[id]: hapus log dari Supabase
+3. Kartu dihapus dari daftar tanpa reload
 ```
 
 ---
 
-## 10. Komponen UI (shadcn/ui)
+## 10. Komponen UI
 
 | Komponen | Digunakan untuk |
 |---|---|
 | `Card` | Tampilan log kerja per item |
-| `Dialog` | Form tambah/edit log, konfirmasi hapus |
-| `Form` + `Input` | Input data log kerja |
-| `Calendar` | Date picker tanggal log |
-| `Badge` | Label kategori dan tipe file |
-| `Table` | Daftar log kerja, indikator kinerja |
-| `Tabs` | Navigasi detail laporan (info, file, kinerja) |
-| `Progress` | Capaian indikator kinerja |
-| `Dropzone` | Area upload file (foto + dokumen) |
-| `Toast` | Notifikasi sukses/gagal operasi |
-| `Sheet` | Sidebar filter & navigasi mobile |
-| `Tiptap Editor` | Rich text editor isi log kerja |
-| `Command` | Autocomplete `[[...]]` internal link |
+| `Dialog` | Konfirmasi hapus (via ConfirmProvider) |
+| `Input` / `Textarea` | Input data log kerja |
+| `Badge` | Label status dan tag |
+| `Tabs` | Navigasi laporan (WFH vs Bulanan) |
+| `Progress` | Indikator upload file |
+| `Button` | Aksi utama (simpan, hapus, upload) |
+| `Toast` (Sonner) | Notifikasi sukses/gagal operasi |
+| `LogModal` | Modal edit/tambah log (Google Keep style) |
+| `FileUploader` | Area upload file (foto + dokumen) |
+| `Sidebar` | Navigasi utama + toggle tema |
 
 ---
 
-## 11. Halaman Aplikasi (Implemented)
+## 11. Halaman Aplikasi
 
-| Halaman | Path | Deskripsi |
+| Halaman | Path | Status |
 |---|---|---|
-| vCard Publik | `/` | Profil digital Ferdy Syarlin, dapat diakses tanpa login |
-| Login | `/login` | Autentikasi via Google OAuth |
-| Log Kerja | `/log` | Daftar log + masonry cards + modal inline edit |
-| Laporan | `/laporan` | Laporan WFH & Bulanan (cetak A4) |
-| Pengaturan | `/settings` | Profil pegawai + upload foto profil |
-| 404 | `/*` | Halaman tidak ditemukan |
+| vCard Publik | `/` | ✅ Live |
+| Login | `/login` | ✅ Live |
+| Log Kerja | `/log` | ✅ Live |
+| Laporan | `/laporan` | ✅ Live |
+| Pengaturan | `/settings` | ✅ Live |
+| 404 | `/*` | ✅ Live |
 
 ---
 
@@ -364,23 +302,22 @@ Saat buka detail log kerja:
 
 - Aplikasi hanya untuk satu pengguna (tidak ada multi-user / kolaborasi)
 - Tidak ada fitur offline
-- Google Keep tidak diintegrasikan
 - Arsip tahunan dilakukan manual (bukan otomatis) untuk kontrol penuh
-- File storage sepenuhnya di Google Drive (tidak ada local storage / Supabase storage)
+- File storage log di Google Drive; file profil di Supabase Storage
 
 ---
 
 ## 14. Milestones Pengembangan
 
-| Fase | Scope | Estimasi |
+| Fase | Scope | Status |
 |---|---|---|
-| **Fase 1** | Setup project, auth Google OAuth, CRUD log kerja dasar | Minggu 1–2 |
-| **Fase 2** | Upload/hapus/replace file ke Google Drive | Minggu 3 |
-| **Fase 3** | Modul kinerja (indikator + realisasi) | Minggu 4 |
-| **Fase 4** | Integrasi Google Calendar & Tasks | Minggu 5 |
-| **Fase 5** | Laporan, export PDF/Excel, arsip Sheets | Minggu 6–7 |
-| **Fase 6** | Tiptap editor, internal link `[[...]]`, backlinks, FTS | Minggu 8–9 |
-| **Fase 7** | Polish UI, mobile responsiveness, testing | Minggu 10 |
+| **Fase 1** | Setup project, auth Google OAuth, CRUD log kerja dasar | ✅ Selesai |
+| **Fase 2** | Upload/hapus/replace file ke Google Drive | ✅ Selesai |
+| **Fase 3** | Laporan WFH & Bulanan cetak A4 | ✅ Selesai |
+| **Fase 4** | Pengaturan profil + upload foto profil | ✅ Selesai |
+| **Fase 5** | Mobile responsive + dark mode | ✅ Selesai |
+| **Fase 6** | Deployment Vercel + GitHub CI/CD | ✅ Selesai (3 Juli 2026) |
+| **Fase 7** *(opsional)* | Modul kinerja, arsip, internal link | 🔲 Belum dimulai |
 
 ---
 
@@ -388,12 +325,9 @@ Saat buka detail log kerja:
 
 - [Supabase Docs](https://supabase.com/docs)
 - [Google Drive API](https://developers.google.com/drive/api)
-- [Google Calendar API](https://developers.google.com/calendar)
-- [Google Tasks API](https://developers.google.com/tasks)
-- [shadcn/ui](https://ui.shadcn.com)
 - [Next.js App Router](https://nextjs.org/docs/app)
 - [Vercel Deployment](https://vercel.com/docs)
-- [Tiptap Editor](https://tiptap.dev/docs)
+- [GitHub Repository](https://github.com/ferdysyarlin/fs-app)
 
 ---
 
