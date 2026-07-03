@@ -35,6 +35,22 @@ export default function LogListPage() {
   const [globalTasks, setGlobalTasks] = useState<any[] | null>(null);
   const [globalTasklistId, setGlobalTasklistId] = useState("@default");
 
+  const togglePin = async (e: React.MouseEvent, log: any) => {
+    e.stopPropagation();
+    try {
+      const res = await fetch(`/api/log/${log.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_pinned: !log.is_pinned })
+      });
+      if (!res.ok) throw new Error("Gagal menyematkan log");
+      toast.success(log.is_pinned ? "Pin dilepas" : "Log disematkan");
+      fetchLogs();
+    } catch (err) {
+      toast.error("Gagal menyematkan log");
+    }
+  };
+
   // Open modal: change URL to /log?id=ID
   const openModal = (log: any) => {
     router.replace(`/log?id=${log.id}`, { scroll: false });
@@ -176,13 +192,16 @@ export default function LogListPage() {
 
   const totalPages = Math.ceil(total / PER_PAGE);
 
-  // Group logs by Year for UI display
-  const groupedLogs = logs.reduce((acc, log) => {
+  // Group normal logs by Year for UI display
+  const normalLogs = logs.filter(l => !l.is_pinned);
+  const pinnedLogs = logs.filter(l => l.is_pinned);
+
+  const groupedLogs = normalLogs.reduce((acc, log) => {
     const year = new Date(log.tanggal).getFullYear().toString();
     if (!acc[year]) acc[year] = [];
     acc[year].push(log);
     return acc;
-  }, {} as Record<string, LogKerja[]>);
+  }, {} as Record<string, any[]>);
 
   // Gallery: flatten all images from all logs (with reference to parent log)
   const galleryImages = logs
@@ -345,13 +364,97 @@ export default function LogListPage() {
             ))}
           </div>
         ) : logs.length === 0 ? (
-          <div className="py-20 text-center">
-            <FileText size={48} className="mx-auto mb-4 text-muted-foreground opacity-30" />
-            <p className="text-lg font-medium text-foreground mb-2">Belum ada log kerja</p>
-            <p className="text-sm text-muted-foreground">Silakan sesuaikan filter atau tambahkan log baru.</p>
+          <div className="py-20 flex flex-col items-center justify-center text-muted-foreground text-center animate-fade-in px-4">
+            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+              <FileText size={24} className="opacity-50" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-1">Belum ada log kerja</h3>
+            <p className="text-sm max-w-[250px]">Silakan tambah log baru atau sesuaikan filter pencarian.</p>
           </div>
         ) : (
-          Object.entries(groupedLogs).map(([year, yearLogs]) => (
+          <div className="space-y-6 sm:space-y-10 pb-20">
+            {/* Pinned Logs Section */}
+            {pinnedLogs.length > 0 && viewMode === "masonry" && (
+              <div className="mb-10">
+                <div className="sticky top-[56px] lg:top-[68px] z-10 bg-background/95 backdrop-blur py-2 flex items-center gap-2 mb-2 lg:mb-4">
+                  <div className="w-1 h-4 bg-red-500 rounded-full"></div>
+                  <h2 className="text-[11px] lg:text-sm font-bold text-red-500 uppercase tracking-widest flex items-center gap-1">
+                    <Pin size={14} className="fill-current" /> Disematkan
+                  </h2>
+                  <div className="flex-1 border-t border-border mx-2"></div>
+                  <span className="text-[10px] lg:text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-md">{pinnedLogs.length} Log</span>
+                </div>
+                <div className="columns-2 lg:columns-3 xl:columns-4 gap-2 lg:gap-4 space-y-2 lg:space-y-4">
+                  {pinnedLogs.map((log: any) => (
+                    <div key={log.id} className="break-inside-avoid">
+                      <Card 
+                        className="hover:shadow-md transition-shadow group overflow-hidden border-2 cursor-pointer border-red-500 bg-red-500/5 dark:bg-red-500/10"
+                        onClick={() => openModal(log)}
+                      >
+                        {log.gambar && log.gambar.length > 0 && (
+                          <div className={cn("grid gap-0.5 bg-background",
+                            log.gambar.length === 1 ? 'grid-cols-1' :
+                              log.gambar.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
+                          )}>
+                            {log.gambar.slice(0, 3).map((img: any, idx: number) => (
+                              <div
+                                key={img.id}
+                                className="w-full h-24 lg:h-32 bg-muted relative overflow-hidden cursor-zoom-in group/img"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPreviewImg({ id: img.id, url: img.url, name: img.name, log });
+                                }}
+                              >
+                                <img
+                                  src={`/api/image/${img.id}`}
+                                  alt={img.name}
+                                  className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-300"
+                                />
+                                <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/30 transition-colors flex items-center justify-center">
+                                  <Eye size={18} className="text-white opacity-0 group-hover/img:opacity-100 transition-opacity" />
+                                </div>
+                                {idx === 2 && log.gambar.length > 3 && (
+                                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                    <span className="text-white font-medium text-xs lg:text-sm">+{log.gambar.length - 3}</span>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <CardContent className="p-2.5 lg:p-3.5 flex flex-col gap-1.5">
+                          <div className="flex items-center gap-1.5 text-muted-foreground text-[10px] lg:text-xs font-medium">
+                            <Calendar size={10} className="lg:w-3 lg:h-3" />
+                            {formatDateShort(log.tanggal)}
+                          </div>
+                          <div className="text-xs lg:text-xs text-foreground leading-relaxed whitespace-pre-wrap">
+                            {log.deskripsi || <span className="italic opacity-50">Tanpa deskripsi</span>}
+                          </div>
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-1 pt-1.5 border-t border-border/50 gap-2 sm:gap-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className={cn("px-2 py-0.5 rounded-full text-[9px] lg:text-[10px] font-bold tracking-wider border", getStatusColor(log.status))}>
+                                {log.status.toUpperCase()}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                className="p-1.5 rounded hover:bg-background transition-colors text-red-500 hover:text-red-600"
+                                onClick={(e) => togglePin(e, log)}
+                                title="Lepas Pin"
+                              >
+                                <Pin size={14} className="fill-current" />
+                              </button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {Object.entries(groupedLogs).map(([year, yearLogs]) => (
             <div key={year} className="mb-10">
               <div className="sticky top-[56px] lg:top-[68px] z-10 bg-background/95 backdrop-blur py-2 flex items-center gap-2 mb-2 lg:mb-4">
                 <div className="w-1 h-4 bg-primary rounded-full"></div>
@@ -368,10 +471,15 @@ export default function LogListPage() {
                 {viewMode === "masonry" ? yearLogs.map((log: any) => (
                   <div
                     key={log.id}
-                    className="block break-inside-avoid cursor-pointer"
-                    onClick={() => openModal(log)}
+                    className="break-inside-avoid"
                   >
-                    <Card className={cn("hover:shadow-md transition-shadow group overflow-hidden border-2", getCardBgColor(log.status))}>
+                    <Card 
+                      className={cn(
+                        "hover:shadow-md transition-shadow group overflow-hidden border-2 cursor-pointer",
+                        log.is_pinned ? "border-red-500 bg-red-500/5 dark:bg-red-500/10" : getCardBgColor(log.status)
+                      )}
+                      onClick={() => openModal(log)}
+                    >
                       {log.gambar && log.gambar.length > 0 && (
                         <div className={cn("grid gap-0.5 bg-background",
                           log.gambar.length === 1 ? 'grid-cols-1' :
@@ -448,8 +556,15 @@ export default function LogListPage() {
                                 <Link2 size={14} />
                               </a>
                             )}
-                            <button className="p-1.5 rounded hover:bg-background text-muted-foreground hover:text-foreground transition-colors" title="Pin (Coming Soon)">
-                              <Pin size={14} />
+                            <button
+                              className={cn(
+                                "p-1.5 rounded hover:bg-background transition-colors",
+                                log.is_pinned ? "text-red-500 hover:text-red-600" : "text-muted-foreground hover:text-foreground"
+                              )}
+                              onClick={(e) => togglePin(e, log)}
+                              title={log.is_pinned ? "Lepas Pin" : "Pin Log"}
+                            >
+                              <Pin size={14} className={log.is_pinned ? "fill-current" : ""} />
                             </button>
                             {log.google_task_ids && log.google_task_ids.length > 0 && (
                               <button className="p-1.5 rounded hover:bg-background text-primary transition-colors cursor-default" title={`${log.google_task_ids.length} Task Terkait`}>

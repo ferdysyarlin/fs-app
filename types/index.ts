@@ -9,8 +9,13 @@ export interface LogKerja {
   tautan: string | null;
   created_at: string;
   updated_at: string;
-  // Joined
-  log_files?: LogFile[];
+  tags?: string[];
+  gambar?: any[];
+  dokumen?: any[];
+  jam_masuk?: string;
+  jam_pulang?: string;
+  google_task_ids?: string[];
+  is_pinned?: boolean;
 }
 
 export interface LogFile {

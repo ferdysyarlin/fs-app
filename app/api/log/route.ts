@@ -17,9 +17,10 @@ export async function GET(request: NextRequest) {
     .from("log_kerja")
     .select(`
       id, tanggal, status, deskripsi, catatan, tautan, gambar, dokumen,
-      jam_masuk, jam_pulang, google_task_ids,
+      jam_masuk, jam_pulang, google_task_ids, is_pinned,
       created_at
     `, { count: "exact" })
+    .order("is_pinned", { ascending: false, nullsFirst: false })
     .order("tanggal", { ascending: false })
     .order("created_at", { ascending: false })
     .range((page - 1) * perPage, page * perPage - 1);

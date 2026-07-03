@@ -10,7 +10,11 @@ export async function GET(
 
   const { data, error } = await supabase
     .from("log_kerja")
-    .select("*")
+    .select(`
+      id, tanggal, status, deskripsi, catatan, tautan, tags, gambar, dokumen,
+      jam_masuk, jam_pulang, google_task_ids, is_pinned,
+      created_at
+    `)
     .eq("id", id)
     .single();
 
