@@ -17,7 +17,7 @@ import type { LogKerja } from "@/types";
 import { LogModal } from "@/components/log/LogModal";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 
-const PER_PAGE = 20;
+const PER_PAGE = 100;
 
 export default function LogListPage() {
   const [logs, setLogs] = useState<LogKerja[]>([]);
@@ -371,7 +371,7 @@ export default function LogListPage() {
         ) : (
           <div className="space-y-6 sm:space-y-10 pb-20">
 
-            {Object.entries(groupedLogs).map(([year, yearLogs]) => (
+            {Object.entries(groupedLogs).sort((a, b) => Number(b[0]) - Number(a[0])).map(([year, yearLogs]) => (
             <div key={year} className="mb-10">
               <div className="sticky top-[56px] lg:top-[68px] z-10 bg-background/95 backdrop-blur py-2 flex items-center gap-2 mb-2 lg:mb-4">
                 <div className="w-1 h-4 bg-primary rounded-full"></div>
