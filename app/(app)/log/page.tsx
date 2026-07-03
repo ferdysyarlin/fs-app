@@ -391,7 +391,8 @@ export default function LogListPage() {
                             </span>
                             {new Date(log.tanggal).getDay() === 5 && (
                               <span className="px-2 py-0.5 rounded-full text-[9px] lg:text-[10px] font-bold tracking-wider border bg-orange-100 text-orange-600 border-orange-200 dark:bg-orange-500/20 dark:text-orange-400 dark:border-orange-500/30">
-                                JUMAT
+                                <span className="hidden sm:inline">JUMAT</span>
+                                <span className="inline sm:hidden">JUM</span>
                               </span>
                             )}
                           </div>
@@ -460,7 +461,10 @@ export default function LogListPage() {
                                     item.log.status === 'Sakit' ? 'text-red-400' : 'text-white/80'
                           )}>{item.log.status}</span>
                           {new Date(item.log.tanggal).getDay() === 5 && (
-                            <span className="text-[8px] font-bold uppercase tracking-wider mt-0.5 text-orange-400">JUMAT</span>
+                            <span className="text-[8px] font-bold uppercase tracking-wider mt-0.5 text-orange-400">
+                              <span className="hidden sm:inline">JUMAT</span>
+                              <span className="inline sm:hidden">JUM</span>
+                            </span>
                           )}
                         </div>
                       </div>
