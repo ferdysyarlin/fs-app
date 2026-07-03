@@ -331,7 +331,7 @@ export default function LogListPage() {
         ) : (
           Object.entries(groupedLogs).map(([year, yearLogs]) => (
             <div key={year} className="mb-10">
-              <div className="sticky top-[56px] lg:top-0 z-10 bg-background/95 backdrop-blur py-2 flex items-center gap-2 mb-2 lg:mb-4">
+              <div className="sticky top-[56px] lg:top-[68px] z-10 bg-background/95 backdrop-blur py-2 flex items-center gap-2 mb-2 lg:mb-4">
                 <div className="w-1 h-4 bg-primary rounded-full"></div>
                 <h2 className="text-[11px] lg:text-sm font-semibold text-muted-foreground uppercase tracking-widest">{year}</h2>
                 <div className="flex-1 border-t border-border mx-2"></div>
@@ -457,7 +457,7 @@ export default function LogListPage() {
                     .map((item: any) => (
                       <div
                         key={item.id}
-                        className="break-inside-avoid relative overflow-hidden group cursor-pointer bg-muted"
+                        className="break-inside-avoid relative overflow-hidden rounded-xl group cursor-pointer bg-muted"
                         onClick={(e) => {
                           e.stopPropagation();
                           setPreviewImg({ id: item.id, url: item.url, name: item.name, log: item.log });
