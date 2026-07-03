@@ -301,23 +301,11 @@ export default function LaporanPage() {
                                   {format(f.date, "dd MMM yyyy", { locale: idLocale })}
                                 </Link>
                               </td>
-                              <td className="px-3 py-2">
-                                <Input 
-                                  value={f.jamMasuk} 
-                                  onChange={(e) => updateItem(i, "jamMasuk", formatTimeInput(e.target.value))} 
-                                  disabled={!f.checked}
-                                  readOnly
-                                  className="h-8 px-2 w-16 text-center text-xs"
-                                />
+                              <td className="px-3 py-2 text-center text-xs">
+                                {f.jamMasuk || "-"}
                               </td>
-                              <td className="px-3 py-2">
-                                <Input 
-                                  value={f.jamPulang} 
-                                  onChange={(e) => updateItem(i, "jamPulang", formatTimeInput(e.target.value))} 
-                                  disabled={!f.checked}
-                                  readOnly
-                                  className="h-8 px-2 w-16 text-center text-xs"
-                                />
+                              <td className="px-3 py-2 text-center text-xs">
+                                {f.jamPulang || "-"}
                               </td>
                               <td className="px-3 py-2 min-w-[200px]">
                                 <textarea 
@@ -382,23 +370,15 @@ export default function LaporanPage() {
                           <div className="grid grid-cols-2 gap-3">
                             <div>
                               <span className="text-[10px] font-bold text-muted-foreground block mb-1 uppercase tracking-widest">Jam Masuk</span>
-                              <Input 
-                                value={f.jamMasuk} 
-                                onChange={(e) => updateItem(i, "jamMasuk", formatTimeInput(e.target.value))} 
-                                disabled={!f.checked}
-                                readOnly
-                                className="h-9 text-center text-sm"
-                              />
+                              <div className="text-sm font-medium h-9 flex items-center">
+                                {f.jamMasuk || "-"}
+                              </div>
                             </div>
                             <div>
                               <span className="text-[10px] font-bold text-muted-foreground block mb-1 uppercase tracking-widest">Jam Pulang</span>
-                              <Input 
-                                value={f.jamPulang} 
-                                onChange={(e) => updateItem(i, "jamPulang", formatTimeInput(e.target.value))} 
-                                disabled={!f.checked}
-                                readOnly
-                                className="h-9 text-center text-sm"
-                              />
+                              <div className="text-sm font-medium h-9 flex items-center">
+                                {f.jamPulang || "-"}
+                              </div>
                             </div>
                           </div>
                           
