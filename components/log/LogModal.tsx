@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { Calendar, ExternalLink, FileText, LinkIcon, X, Save, ArrowLeft, Hash, ImageIcon, Plus, Eye, Paperclip, FileSpreadsheet, Presentation, FileIcon, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { Calendar, ExternalLink, FileText, LinkIcon, X, Save, ArrowLeft, ImageIcon, Plus, Eye, Paperclip, FileSpreadsheet, Presentation, FileIcon, Trash2, ChevronLeft, ChevronRight, CheckSquare, Circle, CheckCircle2, Loader2 } from "lucide-react";
 import { formatDateShort, cn } from "@/lib/utils";
 import Link from "next/link";
 import { createPortal } from "react-dom";
@@ -41,6 +41,7 @@ interface LogData {
   tags?: string[];
   jam_masuk?: string;
   jam_pulang?: string;
+  google_task_ids?: string[];
 }
 
 interface LogModalProps {
@@ -192,9 +193,39 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew }: LogModalPro
   const [isCompressing, setIsCompressing] = useState(false);
   const confirmDialog = useConfirm();
 
-  // Jam masuk/pulang & program
+  // Jam masuk/pulang
   const [jamMasuk, setJamMasuk] = useState(log?.jam_masuk || "");
   const [jamPulang, setJamPulang] = useState(log?.jam_pulang || "");
+
+  // Google Tasks
+  const [linkedTaskIds, setLinkedTaskIds] = useState<string[]>(log?.google_task_ids ?? []);
+  const [linkedTaskDetails, setLinkedTaskDetails] = useState<any[]>([]);
+  const [allTasks, setAllTasks] = useState<any[]>([]);
+  const [tasklistId, setTasklistId] = useState("@default");
+  const [showTaskPicker, setShowTaskPicker] = useState(false);
+  const [showNewTaskForm, setShowNewTaskForm] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [taskLoading, setTaskLoading] = useState(false);
+  const [taskSaving, setTaskSaving] = useState(false);
+  const taskPickerRef = useRef<HTMLDivElement>(null);
+
+  // Fetch all tasks for picker
+  const fetchAllTasks = useCallback(async () => {
+    try {
+      const res = await fetch("/api/google-tasks");
+      const json = await res.json();
+      if (res.ok && json.data) {
+        setAllTasks(json.data);
+        if (json.tasklistId) setTasklistId(json.tasklistId);
+        // Resolve linked task details
+        setLinkedTaskDetails(json.data.filter((t: any) => (log?.google_task_ids ?? []).includes(t.id)));
+      }
+    } catch {}
+  }, [log?.google_task_ids]);
+
+  useEffect(() => {
+    if (!isNew && log?.id) fetchAllTasks();
+  }, [isNew, log?.id, fetchAllTasks]);
 
   // Sync state if log prop changes (e.g. from parent)
   useEffect(() => {
@@ -208,6 +239,7 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew }: LogModalPro
       setSavedDocs(log.dokumen ?? []);
       setJamMasuk(log.jam_masuk || "");
       setJamPulang(log.jam_pulang || "");
+      setLinkedTaskIds(log.google_task_ids ?? []);
       setPendingFiles([]);
       setPendingDocs([]);
     }
@@ -562,7 +594,163 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew }: LogModalPro
                 />
               </div>
 
-              {/* Gambar Tersimpan */}
+              {/* Tasks Terkait — hanya tampil saat edit log yang sudah ada */}
+              {!isNew && log?.id && (
+                <div>
+                  <h3 className="text-[10px] font-bold text-muted-foreground mb-2 uppercase tracking-widest flex items-center gap-1.5">
+                    <CheckSquare size={10} />
+                    Tasks Terkait
+                  </h3>
+
+                  {/* Linked tasks list */}
+                  {linkedTaskDetails.length > 0 && (
+                    <div className="flex flex-col gap-1.5 mb-2">
+                      {linkedTaskDetails.map((task: any) => (
+                        <div key={task.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/60 border border-border/50 group">
+                          <button
+                            onClick={async () => {
+                              const isDone = task.status === "completed";
+                              const res = await fetch(`/api/google-tasks/${task.id}`, {
+                                method: "PUT",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ tasklistId, completed: !isDone }),
+                              });
+                              if (res.ok) {
+                                const json = await res.json();
+                                setLinkedTaskDetails(prev => prev.map(t => t.id === task.id ? json.data : t));
+                              }
+                            }}
+                            className="flex-shrink-0 text-muted-foreground hover:text-primary transition-colors"
+                          >
+                            {task.status === "completed"
+                              ? <CheckCircle2 size={16} className="text-primary" />
+                              : <Circle size={16} />}
+                          </button>
+                          <span className={cn("flex-1 text-xs truncate", task.status === "completed" && "line-through text-muted-foreground")}>
+                            {task.title}
+                          </span>
+                          <button
+                            onClick={async () => {
+                              const res = await fetch(`/api/google-tasks/link?log_kerja_id=${log.id}&task_id=${task.id}`, { method: "DELETE" });
+                              if (res.ok) {
+                                setLinkedTaskIds(prev => prev.filter(id => id !== task.id));
+                                setLinkedTaskDetails(prev => prev.filter(t => t.id !== task.id));
+                              }
+                            }}
+                            className="opacity-0 group-hover:opacity-100 flex-shrink-0 text-muted-foreground hover:text-red-500 transition-all p-0.5"
+                            title="Lepas tautan"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* New task quick form */}
+                  {showNewTaskForm && (
+                    <div className="flex items-center gap-2 mb-2">
+                      <input
+                        autoFocus
+                        type="text"
+                        placeholder="Judul task baru..."
+                        value={newTaskTitle}
+                        onChange={e => setNewTaskTitle(e.target.value)}
+                        onKeyDown={async e => {
+                          if (e.key === "Enter" && newTaskTitle.trim()) {
+                            setTaskSaving(true);
+                            try {
+                              const createRes = await fetch("/api/google-tasks", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ title: newTaskTitle, tasklistId }),
+                              });
+                              const createJson = await createRes.json();
+                              if (!createRes.ok) throw new Error(createJson.error);
+                              const newTask = createJson.data;
+                              await fetch("/api/google-tasks/link", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ log_kerja_id: log.id, task_id: newTask.id }),
+                              });
+                              setLinkedTaskIds(prev => [...prev, newTask.id]);
+                              setLinkedTaskDetails(prev => [...prev, newTask]);
+                              setAllTasks(prev => [newTask, ...prev]);
+                              setNewTaskTitle("");
+                              setShowNewTaskForm(false);
+                            } catch (err: any) {
+                              toast.error(err.message);
+                            } finally {
+                              setTaskSaving(false);
+                            }
+                          }
+                          if (e.key === "Escape") { setShowNewTaskForm(false); setNewTaskTitle(""); }
+                        }}
+                        className="flex-1 bg-muted/60 border border-primary rounded-lg px-2 py-1.5 text-xs outline-none"
+                      />
+                      {taskSaving && <Loader2 size={14} className="animate-spin text-muted-foreground" />}
+                      <button onClick={() => { setShowNewTaskForm(false); setNewTaskTitle(""); }} className="text-muted-foreground hover:text-foreground">
+                        <X size={14} />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Task picker dropdown */}
+                  <div className="relative" ref={taskPickerRef}>
+                    {showTaskPicker && (
+                      <div className="absolute bottom-8 left-0 z-20 w-64 bg-popover border border-border rounded-lg shadow-xl p-2 animate-in fade-in zoom-in-95 duration-100">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 px-1">Pilih Task</p>
+                        <div className="max-h-48 overflow-y-auto flex flex-col gap-0.5">
+                          {allTasks
+                            .filter(t => !linkedTaskIds.includes(t.id))
+                            .map(task => (
+                              <button
+                                key={task.id}
+                                className="flex items-center gap-2 px-2 py-1.5 text-xs rounded-md hover:bg-muted text-left w-full"
+                                onClick={async () => {
+                                  setShowTaskPicker(false);
+                                  const res = await fetch("/api/google-tasks/link", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ log_kerja_id: log.id, task_id: task.id }),
+                                  });
+                                  if (res.ok) {
+                                    setLinkedTaskIds(prev => [...prev, task.id]);
+                                    setLinkedTaskDetails(prev => [...prev, task]);
+                                  }
+                                }}
+                              >
+                                {task.status === "completed"
+                                  ? <CheckCircle2 size={12} className="text-primary flex-shrink-0" />
+                                  : <Circle size={12} className="text-muted-foreground flex-shrink-0" />}
+                                <span className={cn("truncate", task.status === "completed" && "line-through text-muted-foreground")}>{task.title}</span>
+                              </button>
+                            ))}
+                          {allTasks.filter(t => !linkedTaskIds.includes(t.id)).length === 0 && (
+                            <p className="text-[10px] text-muted-foreground text-center py-3">Semua task sudah ditautkan</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => { setShowTaskPicker(v => !v); setShowNewTaskForm(false); }}
+                        className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        <Plus size={12} /> Tautkan Task
+                      </button>
+                      <span className="text-muted-foreground/40 text-[10px]">·</span>
+                      <button
+                        onClick={() => { setShowNewTaskForm(v => !v); setShowTaskPicker(false); }}
+                        className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        <Plus size={12} /> Buat & Tautkan
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {savedImages.length > 0 && (
                 <div>
                   <h3 className="text-[10px] font-bold text-muted-foreground mb-3 uppercase tracking-widest">Gambar</h3>

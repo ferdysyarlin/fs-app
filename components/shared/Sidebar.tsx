@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
-  FileText, BarChart2,
+  FileText, BarChart2, CheckSquare,
   Settings, LogOut, Menu, X, Sun, Moon
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -21,6 +21,7 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { href: "/log", icon: FileText, label: "Log Kerja" },
+  { href: "/tasks", icon: CheckSquare, label: "Tasks" },
   { href: "/laporan", icon: BarChart2, label: "Laporan" },
   { href: "/settings", icon: Settings, label: "Pengaturan" },
 ];

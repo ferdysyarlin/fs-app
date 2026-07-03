@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     .from("log_kerja")
     .select(`
       id, tanggal, status, deskripsi, catatan, tautan, gambar, dokumen,
-      jam_masuk, jam_pulang,
+      jam_masuk, jam_pulang, google_task_ids,
       created_at
     `, { count: "exact" })
     .order("tanggal", { ascending: false })
