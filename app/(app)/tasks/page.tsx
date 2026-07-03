@@ -21,15 +21,7 @@ interface GTask {
   completed?: string;
 }
 
-const STARRED_KEY = "fs_starred_tasks";
-function getStarred(): Set<string> {
-  if (typeof window === "undefined") return new Set();
-  try { return new Set(JSON.parse(localStorage.getItem(STARRED_KEY) ?? "[]")); }
-  catch { return new Set(); }
-}
-function saveStarred(ids: Set<string>) {
-  localStorage.setItem(STARRED_KEY, JSON.stringify([...ids]));
-}
+// Star logic is now synced directly with Google Tasks by prefixing "⭐ " to the title.
 
 export default function TasksPage() {
   const router = useRouter();
@@ -37,7 +29,7 @@ export default function TasksPage() {
   const [tasklistId, setTasklistId] = useState("@default");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [starred, setStarred] = useState<Set<string>>(new Set());
+  const [error, setError] = useState<string | null>(null);
 
   // New task form
   const [showNewForm, setShowNewForm] = useState(false);
@@ -57,7 +49,7 @@ export default function TasksPage() {
   const [linkedLogs, setLinkedLogs] = useState<any[]>([]);
   const [linkedLoading, setLinkedLoading] = useState(false);
 
-  useEffect(() => { setStarred(getStarred()); }, []);
+
 
   const fetchTasks = useCallback(async () => {
     setLoading(true);
@@ -77,21 +69,38 @@ export default function TasksPage() {
 
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
 
+  const isTaskStarred = (title: string) => title.startsWith("⭐");
+  
   const activeTasks = tasks.filter(t => t.status === "needsAction");
   const sortedTasks = [
-    ...activeTasks.filter(t => starred.has(t.id)),
-    ...activeTasks.filter(t => !starred.has(t.id)),
+    ...activeTasks.filter(t => isTaskStarred(t.title)),
+    ...activeTasks.filter(t => !isTaskStarred(t.title)),
   ];
   const doneCnt = tasks.filter(t => t.status === "completed").length;
 
-  const handleStar = (e: React.MouseEvent, taskId: string) => {
+  const handleStar = async (e: React.MouseEvent, task: GTask) => {
     e.stopPropagation();
-    setStarred(prev => {
-      const next = new Set(prev);
-      next.has(taskId) ? next.delete(taskId) : next.add(taskId);
-      saveStarred(next);
-      return next;
-    });
+    const starredNow = isTaskStarred(task.title);
+    const newTitle = starredNow 
+      ? task.title.replace(/^⭐\s*/, "") 
+      : `⭐ ${task.title}`;
+      
+    // Optimistic
+    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, title: newTitle } : t));
+    
+    try {
+      const res = await fetch(`/api/google-tasks/${task.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tasklistId, title: newTitle }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+      setTasks(prev => prev.map(t => t.id === task.id ? json.data : t));
+    } catch (err: any) {
+      toast.error("Gagal mengubah bintang: " + err.message);
+      fetchTasks();
+    }
   };
 
   const handleToggle = async (e: React.MouseEvent, task: GTask) => {
@@ -149,7 +158,8 @@ export default function TasksPage() {
       return;
     }
     setSelectedTask(task);
-    setDetailTitle(task.title);
+    setDetailTitle(task.title.replace(/^⭐\s*/, ""));
+
     setDetailNotes(task.notes ?? "");
     setDetailDue(task.due ? task.due.split("T")[0] : "");
     setDetailDirty(false);
@@ -169,12 +179,13 @@ export default function TasksPage() {
     if (!selectedTask || !detailTitle.trim()) return;
     setDetailSaving(true);
     try {
+      const finalTitle = isTaskStarred(selectedTask.title) ? `⭐ ${detailTitle}` : detailTitle;
       const res = await fetch(`/api/google-tasks/${selectedTask.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           tasklistId,
-          title: detailTitle,
+          title: finalTitle,
           notes: detailNotes || undefined,
           due: detailDue ? new Date(detailDue).toISOString() : undefined,
         }),
@@ -206,7 +217,7 @@ export default function TasksPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto h-full overflow-hidden flex flex-col p-4 md:p-6 lg:p-8">
+    <div className="w-full h-full overflow-hidden flex flex-col p-4 md:p-6 lg:p-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-shrink-0">
         <div>
@@ -269,8 +280,8 @@ export default function TasksPage() {
                   className="bg-transparent text-sm outline-none text-muted-foreground"
                 />
               </div>
-              <button type="button" onClick={() => { setShowNewForm(false); setNewTitle(""); setNewNotes(""); setNewDue(""); }} className="text-sm text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg hover:bg-muted transition-colors">Batal</button>
-              <button type="submit" disabled={saving || !newTitle.trim()} className="text-sm bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium disabled:opacity-50 flex items-center gap-1.5 hover:bg-primary/90 transition-colors">
+              <button type="button" onClick={() => { setShowNewForm(false); setNewTitle(""); setNewNotes(""); setNewDue(""); }} className="text-xs text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg hover:bg-muted transition-colors">Batal</button>
+              <button type="submit" disabled={saving || !newTitle.trim()} className="text-xs bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium disabled:opacity-50 flex items-center gap-1.5 hover:bg-primary/90 transition-colors">
                 {saving && <Loader2 size={14} className="animate-spin" />}
                 Simpan
               </button>
@@ -306,48 +317,48 @@ export default function TasksPage() {
                 <div
                   onClick={() => openDetail(task)}
                   className={cn(
-                    "flex items-center gap-3 px-4 py-3 cursor-pointer",
+                    "flex items-center gap-3 px-4 py-2.5 cursor-pointer",
                     isSelected ? "bg-muted/30" : ""
                   )}
                 >
                   <button onClick={e => handleToggle(e, task)} className="flex-shrink-0 text-muted-foreground hover:text-primary transition-colors" title="Tandai selesai">
-                    <Circle size={22} />
+                    <Circle size={20} />
                   </button>
                   <div className="flex-1 min-w-0">
-                    <p className="text-base font-medium text-foreground truncate">{task.title}</p>
+                    <p className="text-sm font-medium text-foreground truncate">{task.title.replace(/^⭐\s*/, "")}</p>
                     {!isSelected && (task.notes || task.due) && (
                       <div className="flex items-center gap-2 mt-0.5">
-                        {task.notes && <span className="text-[12px] text-muted-foreground truncate max-w-[200px]">{task.notes}</span>}
+                        {task.notes && <span className="text-[11px] text-muted-foreground truncate max-w-[200px]">{task.notes}</span>}
                         {task.notes && task.due && <span className="text-muted-foreground/40 text-[10px]">·</span>}
                         {task.due && (
-                          <span className={cn("text-[12px]", new Date(task.due) < new Date() ? "text-red-500 font-medium" : "text-muted-foreground")}>
+                          <span className={cn("text-[11px]", new Date(task.due) < new Date() ? "text-red-500 font-medium" : "text-muted-foreground")}>
                             {format(new Date(task.due), "d MMM yyyy", { locale: idLocale })}
                           </span>
                         )}
                       </div>
                     )}
                   </div>
-                  <button onClick={e => handleStar(e, task.id)} className={cn("flex-shrink-0 p-1.5 rounded-lg transition-all", starred.has(task.id) ? "text-yellow-500" : "text-muted-foreground/0 group-hover:text-muted-foreground/50 hover:!text-yellow-400")} title={starred.has(task.id) ? "Hapus bintang" : "Beri bintang"}>
-                    <Star size={18} fill={starred.has(task.id) ? "currentColor" : "none"} />
+                  <button onClick={e => handleStar(e, task)} className={cn("flex-shrink-0 p-1.5 rounded-lg transition-all", isTaskStarred(task.title) ? "text-yellow-500" : "text-muted-foreground/0 group-hover:text-muted-foreground/50 hover:!text-yellow-400")} title={isTaskStarred(task.title) ? "Hapus bintang" : "Beri bintang"}>
+                    <Star size={16} fill={isTaskStarred(task.title) ? "currentColor" : "none"} />
                   </button>
-                  {isSelected ? <ChevronDown size={18} className="text-muted-foreground flex-shrink-0" /> : <ChevronRight size={18} className="text-muted-foreground/30 group-hover:text-muted-foreground/60 flex-shrink-0" />}
+                  {isSelected ? <ChevronDown size={16} className="text-muted-foreground flex-shrink-0" /> : <ChevronRight size={16} className="text-muted-foreground/30 group-hover:text-muted-foreground/60 flex-shrink-0" />}
                 </div>
 
                 {/* Accordion Body */}
                 {isSelected && (
-                  <div className="px-4 py-4 border-t border-border/50 space-y-5 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="px-4 py-4 border-t border-border/50 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
                     <div>
-                      <input type="text" value={detailTitle} onChange={e => { setDetailTitle(e.target.value); setDetailDirty(true); }} className="w-full text-lg font-semibold bg-transparent outline-none placeholder:text-muted-foreground/50 leading-tight" placeholder="Judul task" />
+                      <input type="text" value={detailTitle} onChange={e => { setDetailTitle(e.target.value); setDetailDirty(true); }} className="w-full text-base font-semibold bg-transparent outline-none placeholder:text-muted-foreground/50 leading-tight" placeholder="Judul task" />
                     </div>
                     <div className="flex items-start gap-3">
-                      <AlignLeft size={18} className="text-muted-foreground flex-shrink-0 mt-1" />
+                      <AlignLeft size={16} className="text-muted-foreground flex-shrink-0 mt-1" />
                       <textarea value={detailNotes} onChange={e => { setDetailNotes(e.target.value); setDetailDirty(true); }} placeholder="Tambahkan catatan" rows={3} className="flex-1 text-sm bg-transparent outline-none resize-none placeholder:text-muted-foreground/50 leading-relaxed" />
                     </div>
                     <div className="flex items-center gap-3">
-                      <Calendar size={18} className="text-muted-foreground flex-shrink-0" />
+                      <Calendar size={16} className="text-muted-foreground flex-shrink-0" />
                       <div className="flex items-center gap-2">
-                        <input type="date" value={detailDue} onChange={e => { setDetailDue(e.target.value); setDetailDirty(true); }} className="text-sm bg-muted/60 border border-border rounded-lg px-3 py-1.5 outline-none focus:border-primary transition-all" />
-                        {detailDue && <button onClick={() => { setDetailDue(""); setDetailDirty(true); }} className="text-xs text-muted-foreground hover:text-foreground">hapus</button>}
+                        <input type="date" value={detailDue} onChange={e => { setDetailDue(e.target.value); setDetailDirty(true); }} className="text-xs bg-muted/60 border border-border rounded-lg px-3 py-1.5 outline-none focus:border-primary transition-all" />
+                        {detailDue && <button onClick={() => { setDetailDue(""); setDetailDirty(true); }} className="text-[10px] text-muted-foreground hover:text-foreground">hapus</button>}
                       </div>
                     </div>
 
