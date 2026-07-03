@@ -376,8 +376,8 @@ export default function LaporanPage() {
           </div>
           
           {/* Paper Document Wrapper */}
-          <div className="p-4 sm:p-8 print:p-0 print:bg-white print:text-black overflow-x-auto w-full">
-            <div className="w-max mx-auto">
+          <div className="p-4 sm:p-8 print:p-0 print:bg-white print:text-black overflow-x-hidden w-full flex justify-center">
+            <div className={`w-max mx-auto transition-all ${!isGeneratingPdf ? "zoom-preview" : ""}`}>
               {/* The A4 Paper Content */}
               <div id="print-document" className="bg-white text-black p-[1.5cm] w-[210mm] min-w-[210mm] min-h-[297mm] shadow-2xl print:shadow-none print:max-w-none print:min-w-0 relative print:m-0" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
               
@@ -402,6 +402,13 @@ export default function LaporanPage() {
                 /* Memastikan html2canvas membaca border dengan benar */
                 #print-document table { border-collapse: collapse; width: 100%; }
                 #print-document th, #print-document td { box-sizing: border-box; }
+                
+                @media screen and (max-width: 639px) {
+                  .zoom-preview { zoom: 0.45; }
+                }
+                @media screen and (min-width: 640px) and (max-width: 850px) {
+                  .zoom-preview { zoom: 0.75; }
+                }
               `}} />
 
               {/* Document Header */}
@@ -504,6 +511,7 @@ export default function LaporanPage() {
                 </div>
               </div>
 
+              </div>
             </div>
           </div>
         </div>,
