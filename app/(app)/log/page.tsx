@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { Input, Select } from "@/components/ui/input";
 import { formatDateShort, cn } from "@/lib/utils";
 import {
   Search, Plus, FileText, Calendar, Trash2, Pin, Link2, Eye, X as XIcon, ExternalLink,
-  RefreshCw, ChevronLeft, ChevronRight, Filter, Paperclip, LayoutGrid, LayoutDashboard, CheckSquare
+  RefreshCw, ChevronLeft, ChevronRight, Filter, Paperclip, LayoutGrid, LayoutDashboard, CheckSquare, Loader2
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
@@ -17,12 +17,13 @@ import type { LogKerja } from "@/types";
 import { LogModal } from "@/components/log/LogModal";
 import { useConfirm } from "@/components/providers/ConfirmProvider";
 
-const PER_PAGE = 100;
+const PER_PAGE = 30;
 
 export default function LogListPage() {
   const [logs, setLogs] = useState<LogKerja[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
+  const [yearCounts, setYearCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [showMobileFilter, setShowMobileFilter] = useState(false);
@@ -34,6 +35,20 @@ export default function LogListPage() {
   const [viewMode, setViewMode] = useState<"masonry" | "gallery">("masonry");
   const [globalTasks, setGlobalTasks] = useState<any[] | null>(null);
   const [globalTasklistId, setGlobalTasklistId] = useState("@default");
+  
+  const loaderRef = useRef<HTMLDivElement>(null);
+  const totalPages = Math.ceil(total / PER_PAGE);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && !loading && page < totalPages) {
+        setPage(p => p + 1);
+      }
+    }, { rootMargin: "200px" });
+
+    if (loaderRef.current) observer.observe(loaderRef.current);
+    return () => observer.disconnect();
+  }, [loading, page, totalPages]);
 
   const togglePin = async (e: React.MouseEvent, log: any) => {
     e.stopPropagation();
@@ -132,7 +147,12 @@ export default function LogListPage() {
     try {
       const res = await fetch(`/api/log?${params}`);
       const json = await res.json();
-      setLogs(json.data || []);
+      if (page === 1) {
+        setLogs(json.data || []);
+        if (json.yearCounts) setYearCounts(json.yearCounts);
+      } else {
+        setLogs(prev => [...prev, ...(json.data || [])]);
+      }
       setTotal(json.count || 0);
     } catch (error) {
       console.error(error);
@@ -377,7 +397,7 @@ export default function LogListPage() {
                 <div className="w-1 h-4 bg-primary rounded-full"></div>
                 <h2 className="text-[11px] lg:text-sm font-semibold text-muted-foreground uppercase tracking-widest">{year}</h2>
                 <div className="flex-1 border-t border-border mx-2"></div>
-                <span className="text-[10px] lg:text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-md">{yearLogs.length} Log</span>
+                <span className="text-[10px] lg:text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-md">{yearCounts[year] || yearLogs.length} Log</span>
               </div>
 
               <div className={cn(
@@ -546,20 +566,13 @@ export default function LogListPage() {
           </div>
         )}
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-3 mt-10">
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="rounded-full px-4">
-              <ChevronLeft size={14} className="mr-1" /> Prev
-            </Button>
-            <span className="text-sm font-medium text-muted-foreground">
-              {page} / {totalPages}
-            </span>
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="rounded-full px-4">
-              Next <ChevronRight size={14} className="ml-1" />
-            </Button>
-          </div>
-        )}
+        {/* Infinite Scroll Loader */}
+        <div ref={loaderRef} className="flex justify-center py-6 mt-4">
+          {loading && page > 1 && <Loader2 className="animate-spin text-muted-foreground" />}
+          {!loading && page >= totalPages && logs.length > 0 && (
+            <span className="text-sm text-muted-foreground">Semua data telah dimuat.</span>
+          )}
+        </div>
       </div>
 
       {/* Floating Action Buttons */}
