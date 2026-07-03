@@ -255,12 +255,16 @@ export default function LaporanPage() {
 
           {/* Filter Bulan & Tahun */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Select value={bulan} onChange={e => setBulan(e.target.value)} className="flex-1 sm:w-auto h-10 text-sm rounded-full bg-background border-border">
-              {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-            </Select>
-            <Select value={tahun} onChange={e => setTahun(e.target.value)} className="flex-1 sm:w-auto h-10 text-sm rounded-full bg-background border-border">
-              {years.map(y => <option key={y} value={y}>{y}</option>)}
-            </Select>
+            <div className="flex-1 w-full sm:w-auto">
+              <Select value={bulan} onChange={e => setBulan(e.target.value)} className="w-full h-10 text-sm rounded-full bg-background border-border">
+                {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+              </Select>
+            </div>
+            <div className="flex-1 w-full sm:w-auto">
+              <Select value={tahun} onChange={e => setTahun(e.target.value)} className="w-full h-10 text-sm rounded-full bg-background border-border">
+                {years.map(y => <option key={y} value={y}>{y}</option>)}
+              </Select>
+            </div>
           </div>
         </div>
 
