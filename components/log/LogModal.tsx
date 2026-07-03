@@ -912,12 +912,13 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew }: LogModalPro
                             continue;
                           }
 
-                          // Jika ukuran file > 200 KB, lakukan kompresi
-                          if (file.size > 200 * 1024) {
+                          // Jika ukuran file > 1 MB, lakukan kompresi
+                          if (file.size > 1024 * 1024) {
                             try {
                               const options = {
-                                maxSizeMB: 0.2, // Target maksimal ~200 KB
-                                maxWidthOrHeight: 1280, // Resolusi lebih kecil (HD) agar 200KB tetap menjaga kualitas tanpa blur berlebih
+                                maxSizeMB: 1,           // Target maksimal ~1 MB
+                                maxWidthOrHeight: 1920, // Full HD — cukup tajam untuk dokumentasi
+                                initialQuality: 0.85,   // Kualitas JPEG: 0–1 (0.85 = tajam, tidak buram)
                                 useWebWorker: true,
                               };
                               const compressedBlob = await imageCompression(file, options);
@@ -932,7 +933,7 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew }: LogModalPro
                               toast.error(`Gagal memproses gambar ${file.name}`);
                             }
                           } else {
-                            // File sudah di bawah 200 KB
+                            // File sudah di bawah 1 MB, langsung pakai
                             validFiles.push(file);
                           }
                         }
