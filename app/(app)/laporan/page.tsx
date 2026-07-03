@@ -157,7 +157,7 @@ export default function LaporanPage() {
   const monthLabel = months.find(m => m.value === bulan)?.label;
   const isWfh = activeTab === "wfh";
   const titleReport = isWfh ? "Rekapitulasi Pelaksanaan Work From Home" : "Laporan Kinerja Bulanan";
-  const columnRealisasi = isWfh ? "Realisasi" : "Bukti Dukung";
+  const columnRealisasi = "Realisasi dan Bukti Dukung";
 
   const handleDownloadPdf = async () => {
     if (!profil.nama_lengkap) {
