@@ -199,9 +199,9 @@ export default function LaporanPage() {
 
       <div className="flex flex-col gap-6">
         {/* Top Controls */}
-        <div className="flex flex-row items-center justify-between gap-2 overflow-x-auto w-full pb-1 scrollbar-hide">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 w-full">
           {/* Horizontal Tabs (Capsule) */}
-          <div className="flex gap-1 sm:gap-2 bg-muted p-1 rounded-full flex-shrink-0">
+          <div className="flex bg-muted p-1 rounded-full w-full sm:w-auto">
             {[
               { id: "wfh", label: "WFH" },
               { id: "bulanan", label: "Bulanan" },
@@ -209,7 +209,7 @@ export default function LaporanPage() {
               <button
                 key={t.id}
                 onClick={() => setActiveTab(t.id as any)}
-                className={`px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition-all rounded-full ${
+                className={`flex-1 sm:flex-none px-4 sm:px-5 py-1.5 sm:py-2 text-sm font-medium transition-all rounded-full text-center ${
                   activeTab === t.id
                     ? "bg-background text-foreground shadow"
                     : "text-muted-foreground hover:text-foreground"
@@ -221,11 +221,11 @@ export default function LaporanPage() {
           </div>
 
           {/* Filter Bulan & Tahun */}
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-            <Select value={bulan} onChange={e => setBulan(e.target.value)} className="w-auto h-8 sm:h-10 text-xs sm:text-sm rounded-full bg-background border-border">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Select value={bulan} onChange={e => setBulan(e.target.value)} className="flex-1 sm:w-auto h-10 text-sm rounded-full bg-background border-border">
               {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
             </Select>
-            <Select value={tahun} onChange={e => setTahun(e.target.value)} className="w-auto h-8 sm:h-10 text-xs sm:text-sm rounded-full bg-background border-border">
+            <Select value={tahun} onChange={e => setTahun(e.target.value)} className="flex-1 sm:w-auto h-10 text-sm rounded-full bg-background border-border">
               {years.map(y => <option key={y} value={y}>{y}</option>)}
             </Select>
           </div>
@@ -296,7 +296,7 @@ export default function LaporanPage() {
                                   value={f.realisasi} 
                                   onChange={(e) => updateItem(i, "realisasi", e.target.value)} 
                                   disabled={!f.checked}
-                                  className="w-full h-10 bg-transparent border border-border/50 rounded-md p-1.5 text-xs outline-none focus:border-primary resize-none"
+                                  className="w-full h-20 bg-transparent border border-border/50 rounded-md p-1.5 text-xs outline-none focus:border-primary resize-none"
                                   placeholder={columnRealisasi + "..."}
                                 />
                                 <textarea 
@@ -304,7 +304,7 @@ export default function LaporanPage() {
                                   onChange={(e) => updateItem(i, "link", e.target.value)} 
                                   disabled={!f.checked}
                                   placeholder="Link bukti (s.id/...)"
-                                  className="w-full mt-1.5 h-12 bg-transparent border border-border/50 rounded-md p-1.5 text-[10px] outline-none focus:border-primary resize-none leading-tight"
+                                  className="w-full mt-1.5 h-16 bg-transparent border border-border/50 rounded-md p-1.5 text-[10px] outline-none focus:border-primary resize-none leading-tight"
                                 />
                               </td>
                             </tr>
@@ -366,7 +366,7 @@ export default function LaporanPage() {
                               value={f.rencana} 
                               onChange={(e) => updateItem(i, "rencana", e.target.value)} 
                               disabled={!f.checked}
-                              className="w-full h-20 bg-muted/30 border border-border/50 rounded-lg p-2.5 text-sm outline-none focus:border-primary resize-none"
+                              className="w-full h-24 bg-muted/30 border border-border/50 rounded-lg p-2.5 text-sm outline-none focus:border-primary resize-none"
                               placeholder="Rencana kerja..."
                             />
                           </div>
@@ -376,7 +376,7 @@ export default function LaporanPage() {
                               value={f.realisasi} 
                               onChange={(e) => updateItem(i, "realisasi", e.target.value)} 
                               disabled={!f.checked}
-                              className="w-full h-16 bg-muted/30 border border-border/50 rounded-lg p-2.5 text-sm outline-none focus:border-primary resize-none mb-2"
+                              className="w-full h-24 bg-muted/30 border border-border/50 rounded-lg p-2.5 text-sm outline-none focus:border-primary resize-none mb-2"
                               placeholder={columnRealisasi + "..."}
                             />
                             <textarea 
@@ -384,7 +384,7 @@ export default function LaporanPage() {
                               onChange={(e) => updateItem(i, "link", e.target.value)} 
                               disabled={!f.checked}
                               placeholder="Link bukti (s.id/...)"
-                              className="w-full h-12 bg-muted/30 border border-border/50 rounded-lg p-2 text-xs outline-none focus:border-primary resize-none leading-tight"
+                              className="w-full h-16 bg-muted/30 border border-border/50 rounded-lg p-2 text-xs outline-none focus:border-primary resize-none leading-tight"
                             />
                           </div>
                         </div>
