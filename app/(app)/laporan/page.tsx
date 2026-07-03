@@ -231,10 +231,10 @@ export default function LaporanPage() {
           {/* Mobile Portal for Tabs */}
           {mobileHeaderNode && createPortal(
             <div className="sm:hidden w-full px-2 flex justify-center">
-              <div className="flex bg-muted/60 p-1 rounded-full w-full max-w-[200px]">
+              <div className="flex bg-muted/60 p-1 rounded-full w-full">
                 {[
                   { id: "wfh", label: "WFH" },
-                  { id: "bulanan", label: "Bulanan" },
+                  { id: "bulanan", label: "Bulan" },
                 ].map((t) => (
                   <button
                     key={t.id}
@@ -255,10 +255,10 @@ export default function LaporanPage() {
 
           {/* Filter Bulan & Tahun */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Select value={bulan} onChange={e => setBulan(e.target.value)} className="w-full sm:w-auto h-10 text-sm rounded-full bg-background border-border">
+            <Select value={bulan} onChange={e => setBulan(e.target.value)} className="flex-1 sm:w-auto h-10 text-sm rounded-full bg-background border-border">
               {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
             </Select>
-            <Select value={tahun} onChange={e => setTahun(e.target.value)} className="w-full sm:w-auto h-10 text-sm rounded-full bg-background border-border">
+            <Select value={tahun} onChange={e => setTahun(e.target.value)} className="flex-1 sm:w-auto h-10 text-sm rounded-full bg-background border-border">
               {years.map(y => <option key={y} value={y}>{y}</option>)}
             </Select>
           </div>

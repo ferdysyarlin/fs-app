@@ -406,7 +406,14 @@ Bucket bernama **`fs-storage`** digunakan untuk menyimpan foto profil pegawai.
 
 File: [`app/(app)/laporan/page.tsx`](../app/(app)/laporan/page.tsx)
 
-Halaman laporan menggunakan tampilan **tabbed interface** dengan dua tab: **Laporan WFH** dan **Laporan Bulanan**.
+Halaman laporan menggunakan tampilan **tabbed interface** dengan dua tab: **WFH** dan **Bulan**.
+
+### Fitur UI & Mobile
+
+- **Tampilan Mobile (Card View)**: Data log ditampilkan sebagai tumpukan Card, bukan tabel, untuk kemudahan membaca di layar sempit.
+- **Top Controls Mobile**: Tombol tab menyatu ke header atas layar. Dropdown bulan/tahun merentang 100% membagi lebar layar.
+- **Read-Only**: Kolom Masuk, Pulang, Realisasi, dan Tautan bersifat *read-only* pada halaman Laporan. Teks tanggal dapat diklik untuk melompat langsung ke halaman Log terkait dengan filter tanggal tersebut.
+- **Preview Auto-Fit**: Pada mobile, dokumen cetak di area preview otomatis diperkecil (zoom-out) agar pas di layar.
 
 ### Jenis Laporan
 
