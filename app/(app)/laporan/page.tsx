@@ -39,6 +39,7 @@ export default function LaporanPage() {
   const [reportData, setReportData] = useState<ReportItem[]>([]);
   const [profil, setProfil] = useState<Record<string, string>>({});
   const [showPreview, setShowPreview] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
@@ -158,13 +159,14 @@ export default function LaporanPage() {
       return;
     }
     
-    setShowPreview(true);
+    setIsGeneratingPdf(true);
     const toastId = toast.loading("Menyiapkan dokumen...");
     
     setTimeout(async () => {
       const element = document.getElementById("print-document");
       if (!element) {
         toast.error("Gagal menemukan dokumen.", { id: toastId });
+        setIsGeneratingPdf(false);
         return;
       }
       
@@ -185,6 +187,8 @@ export default function LaporanPage() {
       } catch (err) {
         console.error(err);
         toast.error("Gagal mengunduh PDF.", { id: toastId });
+      } finally {
+        setIsGeneratingPdf(false);
       }
     }, 500);
   };
@@ -350,31 +354,32 @@ export default function LaporanPage() {
         </button>
       </div>
 
-      {/* Print Preview Modal */}
-      {showPreview && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm overflow-y-auto">
+      {/* Print Preview Modal OR Hidden PDF Container */}
+      {(showPreview || isGeneratingPdf) && typeof document !== "undefined" && createPortal(
+        <div className={`fixed inset-0 z-[100] overflow-y-auto ${isGeneratingPdf ? "opacity-0 pointer-events-none" : "bg-background/80 backdrop-blur-sm"}`}>
           {/* Action Bar */}
-          <div className="sticky top-0 left-0 right-0 h-16 bg-card border-b flex items-center justify-between px-6 z-[101] shadow-sm print:hidden">
+          <div className="sticky top-0 left-0 right-0 h-16 bg-card border-b flex items-center justify-between px-4 sm:px-6 z-[101] shadow-sm print:hidden">
             <h2 className="font-semibold flex items-center gap-2">
-              <FileText size={18} className="text-primary" /> Preview Dokumen
+              <FileText size={18} className="text-primary" /> <span className="hidden sm:inline">Preview Dokumen</span><span className="sm:hidden">Preview</span>
             </h2>
-            <div className="flex items-center gap-3">
-              <Button variant="outline" onClick={() => setShowPreview(false)}>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Button variant="outline" onClick={() => setShowPreview(false)} size="sm">
                 Batal
               </Button>
-              <Button onClick={() => window.print()} className="gap-2" variant="secondary">
-                <Printer size={16} /> Cetak (Ctrl+P)
+              <Button onClick={() => window.print()} className="gap-1 sm:gap-2" variant="secondary" size="sm">
+                <Printer size={16} /> <span className="hidden sm:inline">Cetak (Ctrl+P)</span>
               </Button>
-              <Button onClick={handleDownloadPdf} className="gap-2 bg-blue-500 hover:bg-blue-600 text-white">
-                <Download size={16} /> Unduh PDF
+              <Button onClick={handleDownloadPdf} className="gap-1 sm:gap-2 bg-blue-500 hover:bg-blue-600 text-white" size="sm">
+                <Download size={16} /> <span className="hidden sm:inline">Unduh PDF</span>
               </Button>
             </div>
           </div>
           
           {/* Paper Document Wrapper */}
-          <div className="flex justify-center p-8 print:p-0 print:bg-white print:text-black">
-            {/* The A4 Paper Content */}
-            <div id="print-document" className="bg-white text-black p-[1.5cm] w-full max-w-[210mm] min-h-[297mm] shadow-2xl print:shadow-none print:max-w-none relative print:m-0" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
+          <div className="p-4 sm:p-8 print:p-0 print:bg-white print:text-black overflow-x-auto w-full">
+            <div className="w-max mx-auto">
+              {/* The A4 Paper Content */}
+              <div id="print-document" className="bg-white text-black p-[1.5cm] w-[210mm] min-w-[210mm] min-h-[297mm] shadow-2xl print:shadow-none print:max-w-none print:min-w-0 relative print:m-0" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
               
               {/* Global print CSS override specifically for this document */}
               <style dangerouslySetInnerHTML={{__html: `
