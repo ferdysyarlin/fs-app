@@ -256,15 +256,22 @@ export default function LogListPage() {
       {/* Top Navigation / Filter Bar (Desktop) */}
       <div className="hidden lg:block sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border p-3">
         <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
-          <div className="w-full md:w-1/3 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-            <input
-              type="text"
-              placeholder="Cari di deskripsi, catatan..."
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 rounded-full bg-muted border-transparent focus:border-primary focus:ring-1 focus:ring-primary outline-none text-sm transition-all"
-            />
+          <div className="w-full md:w-1/3 flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+              <input
+                type="text"
+                placeholder="Cari di deskripsi, catatan..."
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 rounded-full bg-muted border-transparent focus:border-primary focus:ring-1 focus:ring-primary outline-none text-sm transition-all"
+              />
+            </div>
+            {hasActiveFilters && (
+              <button onClick={clearFilters} className="w-9 h-9 flex items-center justify-center rounded-full bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20 transition-colors flex-shrink-0" title="Bersihkan Filter">
+                <XIcon size={14} />
+              </button>
+            )}
           </div>
 
           <div className="w-full md:w-auto flex flex-wrap gap-2 items-center">
@@ -293,11 +300,6 @@ export default function LogListPage() {
               onChange={(e) => setTanggalFilter(e.target.value)}
               className="w-auto h-9 text-xs rounded-full"
             />
-            {hasActiveFilters && (
-              <button onClick={clearFilters} className="h-9 px-3 flex items-center gap-1.5 rounded-full bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20 text-xs font-medium transition-colors">
-                <XIcon size={14} /> Bersihkan
-              </button>
-            )}
           </div>
         </div>
       </div>
