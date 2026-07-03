@@ -234,9 +234,6 @@ export default function TasksPage() {
 
   return (
     <div className="w-full h-full overflow-hidden flex flex-col p-4 md:p-6 lg:p-8">
-      {/* Search & Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-center gap-3 mb-6 flex-shrink-0">
-
       {error && (
         <div className="mb-4 flex items-start gap-3 p-4 rounded-xl border border-destructive/40 bg-destructive/5 text-destructive text-sm flex-shrink-0">
           <AlertCircle size={18} className="flex-shrink-0 mt-0.5" />
