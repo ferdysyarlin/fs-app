@@ -912,29 +912,25 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew }: LogModalPro
                             continue;
                           }
 
-                          // Jika ukuran file > 1 MB, lakukan kompresi
-                          if (file.size > 1024 * 1024) {
-                            try {
-                              const options = {
-                                maxSizeMB: 1,           // Target maksimal ~1 MB
-                                maxWidthOrHeight: 1920, // Full HD — cukup tajam untuk dokumentasi
-                                initialQuality: 0.85,   // Kualitas JPEG: 0–1 (0.85 = tajam, tidak buram)
-                                useWebWorker: true,
-                              };
-                              const compressedBlob = await imageCompression(file, options);
-                              // Create a new File from Blob to maintain the name
-                              const compressedFile = new File([compressedBlob], file.name, {
-                                type: compressedBlob.type,
-                                lastModified: Date.now(),
-                              });
-                              validFiles.push(compressedFile);
-                            } catch (err) {
-                              console.error("Gagal kompresi:", err);
-                              toast.error(`Gagal memproses gambar ${file.name}`);
-                            }
-                          } else {
-                            // File sudah di bawah 1 MB, langsung pakai
-                            validFiles.push(file);
+                          // Selalu kompres semua gambar ke target < 500 KB
+                          // initialQuality: 0.85 → library mulai dari kualitas tinggi,
+                          // lalu turun perlahan hanya jika perlu mencapai target ukuran
+                          try {
+                            const options = {
+                              maxSizeMB: 0.5,           // Target maksimal 500 KB
+                              maxWidthOrHeight: 1920,   // Full HD — resolusi cukup tajam
+                              initialQuality: 0.85,     // Mulai di kualitas 85%, turun hanya jika perlu
+                              useWebWorker: true,
+                            };
+                            const compressedBlob = await imageCompression(file, options);
+                            const compressedFile = new File([compressedBlob], file.name, {
+                              type: compressedBlob.type,
+                              lastModified: Date.now(),
+                            });
+                            validFiles.push(compressedFile);
+                          } catch (err) {
+                            console.error("Gagal kompresi:", err);
+                            toast.error(`Gagal memproses gambar ${file.name}`);
                           }
                         }
 
