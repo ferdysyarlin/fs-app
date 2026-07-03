@@ -11,7 +11,6 @@ export interface LogKerja {
   updated_at: string;
   // Joined
   log_files?: LogFile[];
-  tags?: Tag[];
 }
 
 export interface LogFile {
@@ -30,15 +29,6 @@ export interface LogFile {
 
 
 
-export interface Tag {
-  id: string;
-  nama: string;
-}
-
-export interface LogKerjaTag {
-  log_kerja_id: string;
-  tag_id: string;
-}
 
 export interface LogKerjaLink {
   id: string;
@@ -66,7 +56,6 @@ export interface LogKerjaFormData {
   deskripsi?: string;
   catatan?: string;
   tautan?: string;
-  tag_ids?: string[];
 }
 
 // Dashboard stats
@@ -87,7 +76,6 @@ export interface LogFilter {
   program_id?: string;
   tanggal_dari?: string;
   tanggal_sampai?: string;
-  tag?: string;
   page?: number;
   per_page?: number;
 }

@@ -176,10 +176,6 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew }: LogModalPro
   const [tanggal, setTanggal] = useState(log?.tanggal ? log.tanggal.split("T")[0] : new Date().toISOString().split("T")[0]);
   
   // New features state
-  const [selectedTags, setSelectedTags] = useState<string[]>(log?.tags ?? []);
-  const [availableTags, setAvailableTags] = useState<string[]>([]);
-  const [showTagPicker, setShowTagPicker] = useState(false);
-  const [newTagText, setNewTagText] = useState("");
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [savedImages, setSavedImages] = useState<GambarItem[]>(log?.gambar ?? []);
   const [previewImage, setPreviewImage] = useState<GambarItem | null>(null);
@@ -188,7 +184,6 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew }: LogModalPro
   const [previewDoc, setPreviewDoc] = useState<DokumenItem | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
-  const tagPickerRef = useRef<HTMLDivElement>(null);
   const linkPickerRef = useRef<HTMLDivElement>(null);
   const [showLinkPicker, setShowLinkPicker] = useState(false);
 
@@ -200,12 +195,6 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew }: LogModalPro
   // Jam masuk/pulang & program
   const [jamMasuk, setJamMasuk] = useState(log?.jam_masuk || "");
   const [jamPulang, setJamPulang] = useState(log?.jam_pulang || "");
-  // Fetch all unique tags used across all logs
-  useEffect(() => {
-    fetch("/api/tags").then(r => r.json()).then(res => {
-      if (res.data) setAvailableTags(res.data);
-    });
-  }, []);
 
   // Sync state if log prop changes (e.g. from parent)
   useEffect(() => {
@@ -215,7 +204,6 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew }: LogModalPro
       setTautan(log.tautan || "");
       setStatus(log.status || "Hadir");
       setTanggal(log.tanggal ? log.tanggal.split("T")[0] : "");
-      setSelectedTags(log.tags ?? []);
       setSavedImages(log.gambar ?? []);
       setSavedDocs(log.dokumen ?? []);
       setJamMasuk(log.jam_masuk || "");
@@ -246,14 +234,13 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew }: LogModalPro
   }, [tanggal, isNew]);
 
   const isDirty = isNew ? (
-    deskripsi !== "" || catatan !== "" || tautan !== "" || status !== "Hadir" || selectedTags.length > 0 || pendingFiles.length > 0 || pendingDocs.length > 0 || jamMasuk !== "" || jamPulang !== ""
+    deskripsi !== "" || catatan !== "" || tautan !== "" || status !== "Hadir" || pendingFiles.length > 0 || pendingDocs.length > 0 || jamMasuk !== "" || jamPulang !== ""
   ) : log && (
     deskripsi !== (log.deskripsi || "") ||
     catatan !== (log.catatan || "") ||
     tautan !== (log.tautan || "") ||
     status !== log.status ||
     tanggal !== (log.tanggal ? log.tanggal.split("T")[0] : "") ||
-    JSON.stringify([...selectedTags].sort()) !== JSON.stringify([...(log.tags ?? [])].sort()) ||
     jamMasuk !== (log.jam_masuk || "") ||
     jamPulang !== (log.jam_pulang || "") ||
     pendingFiles.length > 0 ||
@@ -277,9 +264,6 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew }: LogModalPro
     };
     
     const handleClickOutside = (event: MouseEvent) => {
-      if (tagPickerRef.current && !tagPickerRef.current.contains(event.target as Node)) {
-        setShowTagPicker(false);
-      }
       if (linkPickerRef.current && !linkPickerRef.current.contains(event.target as Node)) {
         setShowLinkPicker(false);
       }
@@ -305,7 +289,6 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew }: LogModalPro
         deskripsi: deskripsi || null,
         catatan: catatan || null,
         tautan: tautan || null,
-        tags: selectedTags,
         jam_masuk: jamMasuk || null,
         jam_pulang: jamPulang || null,
       };
@@ -748,20 +731,6 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew }: LogModalPro
                   </div>
                 )}
                 
-                {/* Selected Tags Display */}
-                {selectedTags.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-1">
-                    {selectedTags.map(tag => (
-                      <span key={tag} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-medium">
-                        #{tag}
-                        <button onClick={() => setSelectedTags(prev => prev.filter(t => t !== tag))} className="hover:text-red-500 opacity-70 hover:opacity-100">
-                          <X size={10} />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-
                 {/* Link Display (if any) */}
                 {tautan && (
                   <div className="flex items-center gap-1.5 mb-1 text-xs">
@@ -776,79 +745,6 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew }: LogModalPro
                 )}
 
                 <div className="flex items-center gap-4 relative w-full">
-                  {/* Tag Button */}
-                  <div className="relative" ref={tagPickerRef}>
-                    <button 
-                      onClick={() => setShowTagPicker(!showTagPicker)}
-                      className={cn("flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-foreground", showTagPicker || selectedTags.length > 0 ? "text-primary" : "text-muted-foreground")}
-                      title="Tambahkan Tag"
-                    >
-                      <Hash size={16} />
-                    </button>
-                    
-                    {/* Tag Popover */}
-                    {showTagPicker && (
-                      <div className="absolute bottom-8 left-0 z-20 w-52 bg-popover border border-border rounded-lg shadow-xl p-2 animate-in fade-in zoom-in-95 duration-100">
-                        <div className="max-h-40 overflow-y-auto flex flex-col gap-1 mb-2">
-                          {availableTags.length === 0 && <div className="text-[10px] text-muted-foreground p-1 text-center">Belum ada tag</div>}
-                          {availableTags
-                            .filter(t => !newTagText || t.toLowerCase().includes(newTagText.toLowerCase()))
-                            .map(t => (
-                              <button
-                                key={t}
-                                className="flex items-center justify-between px-2 py-1.5 text-xs rounded-md hover:bg-muted text-left w-full"
-                                onClick={() => {
-                                  setSelectedTags(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
-                                }}
-                              >
-                                <span>#{t}</span>
-                                {selectedTags.includes(t) && <X size={12} className="text-muted-foreground" />}
-                              </button>
-                            ))
-                          }
-                        </div>
-                        <div className="flex items-center gap-1 border-t border-border pt-2">
-                          <input 
-                            type="text" 
-                            placeholder="Cari / buat tag..." 
-                            value={newTagText}
-                            onChange={(e) => setNewTagText(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && newTagText.trim()) {
-                                e.preventDefault();
-                                const tag = newTagText.trim().toLowerCase();
-                                if (!availableTags.includes(tag)) {
-                                  setAvailableTags(prev => [...prev, tag].sort());
-                                }
-                                if (!selectedTags.includes(tag)) {
-                                  setSelectedTags(prev => [...prev, tag]);
-                                }
-                                setNewTagText("");
-                              }
-                            }}
-                            className="w-full bg-transparent border-none outline-none text-xs" 
-                          />
-                          <button 
-                            className="text-primary hover:text-primary/80 flex-shrink-0"
-                            onClick={() => {
-                              if (newTagText.trim()) {
-                                const tag = newTagText.trim().toLowerCase();
-                                if (!availableTags.includes(tag)) {
-                                  setAvailableTags(prev => [...prev, tag].sort());
-                                }
-                                if (!selectedTags.includes(tag)) {
-                                  setSelectedTags(prev => [...prev, tag]);
-                                }
-                                setNewTagText("");
-                              }
-                            }}
-                          >
-                            <Plus size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
 
                   {/* Link Button */}
                   <div className="relative" ref={linkPickerRef}>

@@ -385,9 +385,16 @@ export default function LogListPage() {
                         )}
 
                         <div className="flex items-center justify-between mt-1 pt-1.5 border-t border-border/50">
-                          <span className={cn("px-2 py-0.5 rounded-full text-[9px] lg:text-[10px] font-bold tracking-wider border", getStatusColor(log.status))}>
-                            {log.status.toUpperCase()}
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className={cn("px-2 py-0.5 rounded-full text-[9px] lg:text-[10px] font-bold tracking-wider border", getStatusColor(log.status))}>
+                              {log.status.toUpperCase()}
+                            </span>
+                            {new Date(log.tanggal).getDay() === 5 && (
+                              <span className="px-2 py-0.5 rounded-full text-[9px] lg:text-[10px] font-bold tracking-wider border bg-orange-100 text-orange-600 border-orange-200 dark:bg-orange-500/20 dark:text-orange-400 dark:border-orange-500/30">
+                                JUMAT
+                              </span>
+                            )}
+                          </div>
                           <div className="flex items-center gap-1">
                             {log.dokumen && log.dokumen.length > 0 && (
                               <button className="p-1.5 rounded hover:bg-background text-muted-foreground hover:text-primary transition-colors cursor-default" title={`${log.dokumen.length} Dokumen`}>
@@ -452,6 +459,9 @@ export default function LogListPage() {
                                   item.log.status === 'Cuti' ? 'text-blue-400' :
                                     item.log.status === 'Sakit' ? 'text-red-400' : 'text-white/80'
                           )}>{item.log.status}</span>
+                          {new Date(item.log.tanggal).getDay() === 5 && (
+                            <span className="text-[8px] font-bold uppercase tracking-wider mt-0.5 text-orange-400">JUMAT</span>
+                          )}
                         </div>
                       </div>
                     ))

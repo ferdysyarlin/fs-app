@@ -10,14 +10,13 @@ export async function GET(request: NextRequest) {
   const status  = searchParams.get("status") || "";
   const dari    = searchParams.get("tanggal_dari") || "";
   const sampai  = searchParams.get("tanggal_sampai") || "";
-  const tag     = searchParams.get("tag") || "";
   const page    = parseInt(searchParams.get("page") || "1");
   const perPage = parseInt(searchParams.get("per_page") || "20");
 
   let query = supabase
     .from("log_kerja")
     .select(`
-      id, tanggal, status, deskripsi, catatan, tautan, tags, gambar, dokumen,
+      id, tanggal, status, deskripsi, catatan, tautan, gambar, dokumen,
       jam_masuk, jam_pulang,
       created_at
     `, { count: "exact" })
@@ -29,7 +28,6 @@ export async function GET(request: NextRequest) {
   if (status) query = query.eq("status", status);
   if (dari)   query = query.gte("tanggal", dari);
   if (sampai) query = query.lte("tanggal", sampai);
-  if (tag)    query = query.contains("tags", [tag]);
 
   const { data, error, count } = await query;
 
@@ -46,7 +44,7 @@ export async function POST(request: NextRequest) {
   const supabase = await createAdminClient();
 
   const body = await request.json();
-  const { tags, ...logData } = body;
+  const logData = body;
 
   // Check if a log already exists for this date
   const { data: existingLog } = await supabase
@@ -65,7 +63,7 @@ export async function POST(request: NextRequest) {
 
   const { data: log, error } = await supabase
     .from("log_kerja")
-    .insert({ ...logData, id, tags: tags ?? [], gambar: [], dokumen: [], updated_at: new Date().toISOString() })
+    .insert({ ...logData, id, gambar: [], dokumen: [], updated_at: new Date().toISOString() })
     .select()
     .single();
 

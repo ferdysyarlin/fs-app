@@ -27,12 +27,11 @@ export async function PUT(
 ) {
   const { id } = await params;
   const supabase = await createAdminClient();
-  const body = await request.json();
+  const { tags, ...logData } = await request.json();
 
-  // tags is now a TEXT[] column directly in log_kerja
   const { data, error } = await supabase
     .from("log_kerja")
-    .update({ ...body, updated_at: new Date().toISOString() })
+    .update({ ...logData, updated_at: new Date().toISOString() })
     .eq("id", id)
     .select()
     .single();
