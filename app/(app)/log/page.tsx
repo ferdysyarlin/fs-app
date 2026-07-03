@@ -237,7 +237,7 @@ export default function LogListPage() {
       </div>
       {hasActiveFilters && (
         <button onClick={clearFilters} className="w-8 h-8 flex items-center justify-center rounded-full bg-destructive/10 text-destructive border border-destructive/20 flex-shrink-0 transition-colors">
-          <X size={14} />
+          <XIcon size={14} />
         </button>
       )}
       <button
@@ -295,7 +295,7 @@ export default function LogListPage() {
             />
             {hasActiveFilters && (
               <button onClick={clearFilters} className="h-9 px-3 flex items-center gap-1.5 rounded-full bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20 text-xs font-medium transition-colors">
-                <X size={14} /> Bersihkan
+                <XIcon size={14} /> Bersihkan
               </button>
             )}
           </div>
