@@ -154,30 +154,22 @@ export default function LaporanPage() {
 
   return (
     <div className="p-6 w-full">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2 mb-1">
-          <BarChart2 size={22} className="text-primary" />
-          Laporan
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Cetak rekapitulasi kinerja bulanan dan mingguan
-        </p>
-      </div>
+      {/* Title removed */}
 
-      <div className="flex flex-col md:flex-row gap-6">
-        {/* Sidebar Tabs */}
-        <div className="w-full md:w-56 flex-shrink-0 space-y-2">
+      <div className="flex flex-col gap-6">
+        {/* Horizontal Tabs */}
+        <div className="flex gap-6 border-b border-border">
           {[
-            { id: "wfh", label: "Laporan WFH" },
-            { id: "bulanan", label: "Laporan Bulanan" },
+            { id: "wfh", label: "WFH" },
+            { id: "bulanan", label: "Bulanan" },
           ].map((t) => (
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id as any)}
-              className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              className={`pb-3 text-sm font-medium transition-all border-b-2 ${
                 activeTab === t.id
-                  ? "bg-primary/10 text-primary border border-primary/20"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
               }`}
             >
               {t.label}
@@ -186,23 +178,16 @@ export default function LaporanPage() {
         </div>
 
         {/* Content */}
-        <div className="flex-1">
-          <Card className="min-h-[400px]">
-            <CardHeader className="pb-4 border-b border-border/50">
-              <CardTitle className="text-lg">
-                Konfigurasi {isWfh ? "Laporan WFH" : "Laporan Bulanan"}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-6">
-              {/* Filter Bulan & Tahun */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Select label="Bulan" value={bulan} onChange={e => setBulan(e.target.value)} className="flex-1">
-                  {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-                </Select>
-                <Select label="Tahun" value={tahun} onChange={e => setTahun(e.target.value)} className="flex-1">
-                  {years.map(y => <option key={y} value={y}>{y}</option>)}
-                </Select>
-              </div>
+        <div className="flex-1 space-y-6">
+          {/* Filter Bulan & Tahun */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Select label="Bulan" value={bulan} onChange={e => setBulan(e.target.value)} className="flex-1">
+              {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+            </Select>
+            <Select label="Tahun" value={tahun} onChange={e => setTahun(e.target.value)} className="flex-1">
+              {years.map(y => <option key={y} value={y}>{y}</option>)}
+            </Select>
+          </div>
 
               <div className="space-y-4">
                 {loading ? (
@@ -305,9 +290,6 @@ export default function LaporanPage() {
                   </>
                 )}
               </div>
-
-            </CardContent>
-          </Card>
         </div>
       </div>
 
