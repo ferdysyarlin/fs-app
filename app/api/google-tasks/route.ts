@@ -1,15 +1,7 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { googleApiFetch } from "@/lib/google";
 
 const TASKS_API = "https://www.googleapis.com/tasks/v1";
-
-async function getGoogleToken() {
-  const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  const token = session?.provider_token;
-  if (!token) throw new Error("Google token tidak tersedia. Silakan logout lalu login ulang.");
-  return token;
-}
 
 /**
  * GET /api/google-tasks
@@ -17,12 +9,8 @@ async function getGoogleToken() {
  */
 export async function GET() {
   try {
-    const token = await getGoogleToken();
-
     // 1. Ambil semua tasklists dulu untuk cari "@default"
-    const listRes = await fetch(`${TASKS_API}/users/@me/lists?maxResults=20`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const listRes = await googleApiFetch(`${TASKS_API}/users/@me/lists?maxResults=20`);
     if (!listRes.ok) throw new Error("Gagal mengambil tasklists");
     const listData = await listRes.json();
 
@@ -30,9 +18,8 @@ export async function GET() {
     const tasklistId = listData.items?.[0]?.id ?? "@default";
 
     // 2. Ambil tasks dari tasklist
-    const tasksRes = await fetch(
-      `${TASKS_API}/lists/${tasklistId}/tasks?showCompleted=true&showHidden=false&maxResults=100`,
-      { headers: { Authorization: `Bearer ${token}` } }
+    const tasksRes = await googleApiFetch(
+      `${TASKS_API}/lists/${tasklistId}/tasks?showCompleted=true&showHidden=false&maxResults=100`
     );
     if (!tasksRes.ok) throw new Error("Gagal mengambil tasks");
     const tasksData = await tasksRes.json();
@@ -55,7 +42,6 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
-    const token = await getGoogleToken();
     const { title, notes, due, tasklistId = "@default" } = await request.json();
 
     if (!title?.trim()) {
@@ -66,10 +52,9 @@ export async function POST(request: NextRequest) {
     if (notes) body.notes = notes;
     if (due) body.due = due; // RFC 3339 format
 
-    const res = await fetch(`${TASKS_API}/lists/${tasklistId}/tasks`, {
+    const res = await googleApiFetch(`${TASKS_API}/lists/${tasklistId}/tasks`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),

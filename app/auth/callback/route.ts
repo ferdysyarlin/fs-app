@@ -8,8 +8,17 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      if (data.session?.provider_refresh_token) {
+        await supabase
+          .from("user_settings")
+          .upsert({
+            user_id: data.session.user.id,
+            key: "google_refresh_token",
+            value: data.session.provider_refresh_token,
+          }, { onConflict: "user_id, key" });
+      }
       return NextResponse.redirect(`${origin}${next}`);
     }
   }

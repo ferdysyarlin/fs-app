@@ -1,15 +1,7 @@
-import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { googleApiFetch } from "@/lib/google";
 
 const TASKS_API = "https://www.googleapis.com/tasks/v1";
-
-async function getGoogleToken() {
-  const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  const token = session?.provider_token;
-  if (!token) throw new Error("Google token tidak tersedia. Silakan logout lalu login ulang.");
-  return token;
-}
 
 type Params = { params: Promise<{ taskId: string }> };
 
@@ -20,14 +12,11 @@ type Params = { params: Promise<{ taskId: string }> };
  */
 export async function PUT(request: NextRequest, { params }: Params) {
   try {
-    const token = await getGoogleToken();
     const { taskId } = await params;
     const { tasklistId = "@default", ...updates } = await request.json();
 
     // Fetch current task first to merge
-    const currentRes = await fetch(`${TASKS_API}/lists/${tasklistId}/tasks/${taskId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const currentRes = await googleApiFetch(`${TASKS_API}/lists/${tasklistId}/tasks/${taskId}`);
     if (!currentRes.ok) throw new Error("Task tidak ditemukan");
     const current = await currentRes.json();
 
@@ -41,10 +30,9 @@ export async function PUT(request: NextRequest, { params }: Params) {
     };
     delete body.completed; // Remove our custom boolean key
 
-    const res = await fetch(`${TASKS_API}/lists/${tasklistId}/tasks/${taskId}`, {
+    const res = await googleApiFetch(`${TASKS_API}/lists/${tasklistId}/tasks/${taskId}`, {
       method: "PUT",
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
@@ -70,14 +58,12 @@ export async function PUT(request: NextRequest, { params }: Params) {
  */
 export async function DELETE(request: NextRequest, { params }: Params) {
   try {
-    const token = await getGoogleToken();
     const { taskId } = await params;
     const { searchParams } = new URL(request.url);
     const tasklistId = searchParams.get("tasklistId") ?? "@default";
 
-    const res = await fetch(`${TASKS_API}/lists/${tasklistId}/tasks/${taskId}`, {
+    const res = await googleApiFetch(`${TASKS_API}/lists/${tasklistId}/tasks/${taskId}`, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
     });
 
     if (!res.ok && res.status !== 204) {
