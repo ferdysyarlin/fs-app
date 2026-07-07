@@ -42,7 +42,7 @@ export default function ArsipKinerjaPage() {
     return () => clearTimeout(t);
   }, [q]);
 
-  const { data, error, isValidating, mutate } = useSWR('/api/google-sheets/arsip', async (url) => {
+  const { data, error, isValidating, isLoading, mutate } = useSWR('/api/google-sheets/arsip', async (url) => {
     const res = await fetch(url);
     const json = await res.json();
     if (!res.ok && json.error) throw new Error(json.error);
@@ -51,7 +51,7 @@ export default function ArsipKinerjaPage() {
   }, { keepPreviousData: true });
 
   const allLogs: LogKerja[] = data || [];
-  const loading = !data && !error && isValidating;
+  const loading = isLoading;
 
   // Dynamic Years
   const yearOptions = Array.from(

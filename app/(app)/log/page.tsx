@@ -127,7 +127,7 @@ export default function LogListPage() {
 
   const queryStr = `/api/log?${params.toString()}`;
 
-  const { data, error, mutate, isValidating } = useSWR(queryStr, async (url) => {
+  const { data, error, mutate, isValidating, isLoading } = useSWR(queryStr, async (url) => {
     const res = await fetch(url);
     if (!res.ok) throw new Error("Gagal load");
     return res.json();
@@ -137,7 +137,7 @@ export default function LogListPage() {
 
   const logs: any[] = data?.data || [];
   const total = data?.count || 0;
-  const loading = !data && !error && isValidating;
+  const loading = isLoading;
 
   const mid = searchParams.get("id");
   useEffect(() => {
