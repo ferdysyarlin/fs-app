@@ -1,7 +1,7 @@
 # Dokumentasi Teknis – FerdySyarlin App
 
 > Dibuat: 30 Juni 2026  
-> Terakhir diperbarui: 3 Juli 2026 (upgrade Next.js 15.5.20, deployment Vercel, fix parallel route & API route)
+> Terakhir diperbarui: 8 Juli 2026 (PWA, anti-indexing, SWR caching, session persisten, PWA install button mobile)
 
 ---
 
@@ -21,7 +21,8 @@
 12. [Sidebar & Navigasi](#sidebar--navigasi)
 13. [Tampilan Mobile (Responsive)](#tampilan-mobile-responsive)
 14. [Halaman Laporan](#halaman-laporan)
-15. [Deployment (Vercel + GitHub)](#deployment-vercel--github)
+15. [PWA (Progressive Web App)](#pwa-progressive-web-app)
+16. [Deployment (Vercel + GitHub)](#deployment-vercel--github)
 
 ---
 
@@ -43,6 +44,8 @@ Aplikasi **FerdySyarlin** adalah aplikasi produktivitas personal berbasis web un
 | Auth | Supabase Auth (OAuth Google) |
 | Integrasi API | Google Tasks API (REST v1) |
 | Theme | [next-themes](https://github.com/pacocoursey/next-themes) |
+| Data Fetching / Cache | [SWR](https://swr.vercel.app/) (stale-while-revalidate) |
+| PWA | [@ducanh2912/next-pwa](https://ducanh2912.github.io/next-pwa/) + Workbox |
 | Image Compression | [browser-image-compression](https://www.npmjs.com/package/browser-image-compression) |
 | File Storage Log | Google Drive via Google Apps Script (GAS) Web App |
 | File Storage Profil | Supabase Storage (bucket: `fs-storage`) |
@@ -81,7 +84,7 @@ fs-app/
 │   └── globals.css          # Variabel tema + custom utility classes
 ├── components/
 │   ├── ui/                  # Komponen UI dasar (Button, Card, Input, dll)
-│   ├── shared/              # Komponen bersama (Sidebar)
+│   ├── shared/              # Komponen bersama (Sidebar, PWAInstallButton)
 │   ├── log/                 # Komponen khusus Log (LogModal, LogForm, FileUploader, dll)
 │   └── providers/           # Context providers (ConfirmProvider)
 ├── lib/
@@ -377,9 +380,20 @@ File: [`components/shared/Sidebar.tsx`](../components/shared/Sidebar.tsx)
 
 - Semua `<Link>` di Sidebar menggunakan `prefetch={true}` agar halaman tujuan dimuat di latar belakang sebelum diklik.
 - `app/(app)/loading.tsx` berfungsi sebagai *Suspense boundary* global: transisi antar halaman terasa **instan** karena browser langsung merespons klik sambil konten dimuat di balik layar.
+- Halaman `/log` dan `/arsip-kinerja` menggunakan **SWR** (`useSWR`) dengan flag `keepPreviousData: true` dan `isLoading` (bukan `isValidating`) sehingga data tampil instan dari cache memori saat berpindah menu — tanpa loading shimmer berulang.
 
 > [!NOTE]
 > Menu **Kinerja** (lama: `/kinerja`) dan **Pencarian** (`/search`) telah **dihapus** dari sidebar. Menu Arsip Kinerja (`/arsip-kinerja`) telah ditambahkan untuk mengakses data lampau yang diarsipkan di Google Sheets.
+
+### Tombol Instal PWA
+
+Komponen `PWAInstallButton` ([`components/shared/PWAInstallButton.tsx`](../components/shared/PWAInstallButton.tsx)) ditambahkan ke Sidebar dengan perilaku cerdas:
+
+| Platform | Perilaku |
+|---|---|
+| **Android / Chrome / Edge** | Menangkap event `beforeinstallprompt` → tombol "Instal Aplikasi" → dialog instalasi native |
+| **iOS / Safari** | Tombol "Tambah ke Layar Utama" → menampilkan panduan langkah-demi-langkah (*slide-up sheet*) |
+| **Sudah Terinstal** | Tombol otomatis tersembunyi (deteksi via `display-mode: standalone`) |
 
 ---
 
@@ -445,6 +459,46 @@ Semua URL dari kolom `gambar` (JSONB) **dan** `dokumen` (JSONB) dikumpulkan, dip
 
 ---
 
+## PWA (Progressive Web App)
+
+Aplikasi mendukung instalasi sebagai **PWA** di semua platform (Android, iOS, Desktop) dengan konfigurasi berikut:
+
+### File Konfigurasi
+
+| File | Keterangan |
+|---|---|
+| [`app/manifest.ts`](../app/manifest.ts) | Web App Manifest (nama, ikon, warna tema, shortcuts) — digenerate otomatis oleh Next.js 15 |
+| [`next.config.ts`](../next.config.ts) | Dibungkus `withPWA()` dari `@ducanh2912/next-pwa` untuk Service Worker + Workbox |
+| `public/icons/icon-192x192.png` | Ikon PWA 192×192 px |
+| `public/icons/icon-512x512.png` | Ikon PWA 512×512 px (juga digunakan sebagai maskable icon) |
+| [`components/shared/PWAInstallButton.tsx`](../components/shared/PWAInstallButton.tsx) | Tombol instalasi adaptif untuk Android & iOS |
+
+### Konfigurasi Penting
+
+```typescript
+// next.config.ts
+const withPWA = withPWAInit({
+  dest: "public",
+  disable: process.env.NODE_ENV === "development", // PWA DINONAKTIFKAN saat development
+  register: true,
+});
+```
+
+> [!IMPORTANT]
+> **PWA dinonaktifkan secara otomatis saat `npm run dev`.** Ini disengaja agar Service Worker tidak melakukan cache agresif yang dapat menyembunyikan perubahan kode saat pengembangan. PWA hanya aktif di lingkungan produksi (`npm run start` atau Vercel).
+
+> [!NOTE]
+> File `public/sw.js` dan `public/workbox-*.js` bersifat *auto-generated* saat `npm run build` dan sudah **dimasukkan ke `.gitignore`** — tidak perlu dan tidak boleh di-commit ke Git.
+
+### Anti-Indexing (Blokir Mesin Pencari)
+
+Aplikasi ini bersifat **pribadi** dan tidak boleh terindeks mesin pencari. Dikonfigurasi via:
+
+- **[`app/robots.ts`](../app/robots.ts)** — Menghasilkan `/robots.txt` dengan `Disallow: /` untuk semua `User-agent`.
+- **`app/layout.tsx`** — Menambahkan metadata `robots: { index: false, follow: false }` sebagai *HTTP header* pengaman ganda.
+
+---
+
 ## Deployment (Vercel + GitHub)
 
 ### Repository
@@ -477,7 +531,12 @@ Semua URL dari kolom `gambar` (JSONB) **dan** `dokumen` (JSONB) dikumpulkan, dip
 | `GOOGLE_CLIENT_ID` | Google OAuth Client ID |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth Client Secret |
 | `GAS_WEBAPP_URL` | URL Google Apps Script Web App |
+| `GOOGLE_SHEET_ARSIP_ID` | ID Google Sheet yang berisi data Arsip Kinerja (**rahasia, jangan bocorkan ke publik**) |
 | `NEXT_PUBLIC_APP_URL` | URL publik aplikasi (misal: `https://fs-app.vercel.app`) |
+
+### Konfigurasi Session Auth
+
+Session Supabase dikonfigurasi dengan `maxAge: 60 * 60 * 24 * 365` (1 tahun) di `lib/supabase/client.ts`, `lib/supabase/server.ts`, dan `middleware.ts` agar pengguna tidak perlu login ulang setiap menutup tab browser.
 
 > [!CAUTION]
 > **Jangan commit `.env.local` ke Git.** File ini sudah masuk `.gitignore`. Semua environment variables harus dimasukkan secara manual melalui **Vercel Dashboard → Settings → Environment Variables**.
