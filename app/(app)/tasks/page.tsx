@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
+import useSWR from "swr";
 import {
   CheckSquare, Plus, Trash2, RefreshCw, AlertCircle, Loader2,
   Circle, CheckCircle2, Calendar, AlignLeft, X, Star, ChevronDown, ChevronRight, FileText
@@ -25,10 +26,7 @@ interface GTask {
 
 export default function TasksPage() {
   const router = useRouter();
-  const [tasks, setTasks] = useState<GTask[]>([]);
   const [tasklistId, setTasklistId] = useState("@default");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   // New task form
   const [showNewForm, setShowNewForm] = useState(false);
@@ -54,44 +52,42 @@ export default function TasksPage() {
 
 
 
-  const fetchTasks = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [resTasks, resLinked] = await Promise.all([
-        fetch("/api/google-tasks"),
-        fetch("/api/google-tasks/linked-logs-all")
-      ]);
-      const jsonTasks = await resTasks.json();
-      if (!resTasks.ok) throw new Error(jsonTasks.error);
-      
-      setTasks(jsonTasks.data ?? []);
-      if (jsonTasks.tasklistId) setTasklistId(jsonTasks.tasklistId);
-      
-      if (resLinked.ok) {
-        const jsonLinked = await resLinked.json();
-        const logsMap: Record<string, any[]> = {};
-        const ids = new Set<string>();
-        
-        (jsonLinked.data ?? []).forEach((log: any) => {
-          (log.google_task_ids || []).forEach((tid: string) => {
-            ids.add(tid);
-            if (!logsMap[tid]) logsMap[tid] = [];
-            logsMap[tid].push(log);
-          });
-        });
-        
-        setGlobalLinkedIds(ids);
-        setGlobalLinkedLogsMap(logsMap);
-      }
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const { data: tasksData, error: tasksError, isValidating: tasksValidating, mutate: mutateTasks } = useSWR("/api/google-tasks", async (url) => {
+    const res = await fetch(url);
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error);
+    if (json.tasklistId) setTasklistId(json.tasklistId);
+    return json.data || [];
+  }, { keepPreviousData: true });
 
-  useEffect(() => { fetchTasks(); }, [fetchTasks]);
+  const { data: linkedData, isValidating: linkedValidating } = useSWR("/api/google-tasks/linked-logs-all", async (url) => {
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const json = await res.json();
+    return json.data || [];
+  }, { keepPreviousData: true });
+
+  const tasks: GTask[] = tasksData || [];
+  const loading = !tasksData && !tasksError && tasksValidating;
+  const error = tasksError ? tasksError.message : null;
+
+  useEffect(() => {
+    if (linkedData) {
+      const logsMap: Record<string, any[]> = {};
+      const ids = new Set<string>();
+      linkedData.forEach((log: any) => {
+        (log.google_task_ids || []).forEach((tid: string) => {
+          ids.add(tid);
+          if (!logsMap[tid]) logsMap[tid] = [];
+          logsMap[tid].push(log);
+        });
+      });
+      setGlobalLinkedIds(ids);
+      setGlobalLinkedLogsMap(logsMap);
+    }
+  }, [linkedData]);
+
+  const fetchTasks = () => { mutateTasks(); };
 
   const isTaskStarred = (title: string) => title.startsWith("⭐");
   
@@ -110,7 +106,9 @@ export default function TasksPage() {
       : `⭐ ${task.title}`;
       
     // Optimistic
-    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, title: newTitle } : t));
+    mutateTasks((currentTasks: GTask[] = []) => 
+      currentTasks.map(t => t.id === task.id ? { ...t, title: newTitle } : t), 
+    { revalidate: false });
     
     try {
       const res = await fetch(`/api/google-tasks/${task.id}`, {
@@ -120,17 +118,21 @@ export default function TasksPage() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
-      setTasks(prev => prev.map(t => t.id === task.id ? json.data : t));
+      mutateTasks((currentTasks: GTask[] = []) => 
+        currentTasks.map(t => t.id === task.id ? json.data : t), 
+      { revalidate: false });
     } catch (err: any) {
       toast.error("Gagal mengubah bintang: " + err.message);
-      fetchTasks();
+      mutateTasks();
     }
   };
 
   const handleToggle = async (e: React.MouseEvent, task: GTask) => {
     e.stopPropagation();
     const completing = task.status === "needsAction";
-    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: completing ? "completed" : "needsAction" } : t));
+    mutateTasks((currentTasks: GTask[] = []) => 
+      currentTasks.map(t => t.id === task.id ? { ...t, status: completing ? "completed" : "needsAction" } : t), 
+    { revalidate: false });
     if (selectedTask?.id === task.id) setSelectedTask(null);
     try {
       const res = await fetch(`/api/google-tasks/${task.id}`, {
@@ -140,11 +142,13 @@ export default function TasksPage() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
-      setTasks(prev => prev.map(t => t.id === task.id ? json.data : t));
+      mutateTasks((currentTasks: GTask[] = []) => 
+        currentTasks.map(t => t.id === task.id ? json.data : t), 
+      { revalidate: false });
       if (completing) toast.success("Task selesai! ✓");
     } catch (err: any) {
       toast.error(err.message);
-      fetchTasks();
+      mutateTasks();
     }
   };
 
@@ -165,7 +169,7 @@ export default function TasksPage() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
-      setTasks(prev => [json.data, ...prev]);
+      mutateTasks((currentTasks: GTask[] = []) => [json.data, ...currentTasks], { revalidate: false });
       setNewTitle(""); setNewNotes(""); setNewDue("");
       newTitleRef.current?.focus();
       toast.success("Task ditambahkan");
@@ -208,7 +212,9 @@ export default function TasksPage() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
-      setTasks(prev => prev.map(t => t.id === selectedTask.id ? json.data : t));
+      mutateTasks((currentTasks: GTask[] = []) => 
+        currentTasks.map(t => t.id === selectedTask.id ? json.data : t), 
+      { revalidate: false });
       setSelectedTask(json.data);
       setDetailDirty(false);
       toast.success("Tersimpan");
@@ -220,7 +226,9 @@ export default function TasksPage() {
   };
 
   const handleDelete = async (taskId: string) => {
-    setTasks(prev => prev.filter(t => t.id !== taskId));
+    mutateTasks((currentTasks: GTask[] = []) => 
+      currentTasks.filter(t => t.id !== taskId), 
+    { revalidate: false });
     if (selectedTask?.id === taskId) setSelectedTask(null);
     try {
       const res = await fetch(`/api/google-tasks/${taskId}?tasklistId=${tasklistId}`, { method: "DELETE" });
@@ -228,7 +236,7 @@ export default function TasksPage() {
       toast.success("Task dihapus");
     } catch (err: any) {
       toast.error(err.message);
-      fetchTasks();
+      mutateTasks();
     }
   };
 

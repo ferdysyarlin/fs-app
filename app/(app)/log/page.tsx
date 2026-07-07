@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import useSWR from "swr";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,10 +21,7 @@ import { useConfirm } from "@/components/providers/ConfirmProvider";
 const PER_PAGE = 100;
 
 export default function LogListPage() {
-  const [logs, setLogs] = useState<LogKerja[]>([]);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const searchParams = useSearchParams();
@@ -63,33 +61,21 @@ export default function LogListPage() {
   };
 
   const handleUpdateLog = (updatedLog: any) => {
-    setLogs(prev => {
-      const exists = prev.find(l => l.id === updatedLog.id);
+    mutate((currentData: any) => {
+      if (!currentData) return currentData;
+      const prev = currentData.data || [];
+      const exists = prev.find((l: any) => l.id === updatedLog.id);
+      let newLogs;
       if (exists) {
-        return prev.map(l => l.id === updatedLog.id ? { ...l, ...updatedLog } : l);
+        newLogs = prev.map((l: any) => l.id === updatedLog.id ? { ...l, ...updatedLog } : l);
+      } else {
+        newLogs = [updatedLog, ...prev].sort((a: any, b: any) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
       }
-      return [updatedLog, ...prev].sort((a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
-    });
+      return { ...currentData, data: newLogs };
+    }, { revalidate: false });
   };
 
-  // If page loaded with ?id=ID directly
-  const mid = searchParams.get("id");
-  useEffect(() => {
-    if (mid) {
-      if (modalLog?.id === mid) return;
-      const existing = logs.find(l => l.id === mid);
-      if (existing) {
-        setModalLog(existing);
-      } else {
-        fetch(`/api/log/${mid}`)
-          .then((r) => r.json())
-          .then((json) => { if (json.data) setModalLog(json.data); })
-          .catch(() => { toast.error("Gagal memuat log"); });
-      }
-    } else {
-      setModalLog(null);
-    }
-  }, [mid, logs]);
+  // (mid logic moved below)
 
   // Filters
   const [q, setQ] = useState("");
@@ -118,45 +104,60 @@ export default function LogListPage() {
     return () => clearTimeout(t);
   }, [q]);
 
-  const fetchLogs = useCallback(async () => {
-    setLoading(true);
-    setMounted(true);
+  const params = new URLSearchParams({
+    page: String(page),
+    per_page: String(PER_PAGE),
+  });
+  if (debouncedQ) params.set("q", debouncedQ);
+  if (statusFilter) params.set("status", statusFilter);
+  if (tanggalFilter) {
+    params.set("tanggal_dari", tanggalFilter);
+    params.set("tanggal_sampai", tanggalFilter);
+  } else {
+    if (bulanFilter) {
+      const y = tahunFilter || new Date().getFullYear().toString();
+      const lastDay = new Date(parseInt(y), parseInt(bulanFilter), 0).getDate();
+      params.set("tanggal_dari", `${y}-${bulanFilter.padStart(2, '0')}-01`);
+      params.set("tanggal_sampai", `${y}-${bulanFilter.padStart(2, '0')}-${lastDay}`);
+    } else if (tahunFilter) {
+      params.set("tanggal_dari", `${tahunFilter}-01-01`);
+      params.set("tanggal_sampai", `${tahunFilter}-12-31`);
+    }
+  }
 
-    const params = new URLSearchParams({
-      page: String(page),
-      per_page: String(PER_PAGE),
-    });
-    if (debouncedQ) params.set("q", debouncedQ);
-    if (statusFilter) params.set("status", statusFilter);
-    if (tanggalFilter) {
-      params.set("tanggal_dari", tanggalFilter);
-      params.set("tanggal_sampai", tanggalFilter);
-    } else {
-      if (bulanFilter) {
-        const y = tahunFilter || new Date().getFullYear().toString();
-        const lastDay = new Date(parseInt(y), parseInt(bulanFilter), 0).getDate();
-        params.set("tanggal_dari", `${y}-${bulanFilter.padStart(2, '0')}-01`);
-        params.set("tanggal_sampai", `${y}-${bulanFilter.padStart(2, '0')}-${lastDay}`);
-      } else if (tahunFilter) {
-        params.set("tanggal_dari", `${tahunFilter}-01-01`);
-        params.set("tanggal_sampai", `${tahunFilter}-12-31`);
+  const queryStr = `/api/log?${params.toString()}`;
+
+  const { data, error, mutate, isValidating } = useSWR(queryStr, async (url) => {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Gagal load");
+    return res.json();
+  }, { keepPreviousData: true });
+
+  useEffect(() => { setMounted(true); }, []);
+
+  const logs: any[] = data?.data || [];
+  const total = data?.count || 0;
+  const loading = !data && !error && isValidating;
+
+  const mid = searchParams.get("id");
+  useEffect(() => {
+    if (mid) {
+      if (modalLog?.id === mid) return;
+      const existing = logs.find((l: any) => l.id === mid);
+      if (existing) {
+        setModalLog(existing);
+      } else {
+        fetch(`/api/log/${mid}`)
+          .then((r) => r.json())
+          .then((json) => { if (json.data) setModalLog(json.data); })
+          .catch(() => { toast.error("Gagal memuat log"); });
       }
+    } else {
+      setModalLog(null);
     }
+  }, [mid, logs]);
 
-    try {
-      const res = await fetch(`/api/log?${params}`);
-      const json = await res.json();
-      setLogs(json.data || []);
-      setTotal(json.count || 0);
-    } catch (error) {
-      console.error(error);
-      toast.error("Gagal mengambil data log");
-    } finally {
-      setLoading(false);
-    }
-  }, [page, debouncedQ, statusFilter, bulanFilter, tahunFilter, tanggalFilter]);
-
-  useEffect(() => { fetchLogs(); }, [fetchLogs]);
+  const fetchLogs = () => { mutate(); };
 
   useEffect(() => {
     // Background fetch for instant task load in LogModal
@@ -178,10 +179,17 @@ export default function LogListPage() {
     });
     if (!ok) return;
 
-    const logToDelete = logs.find(l => l.id === id);
-    // Optimistic update: hapus dari state langsung agar UI langsung merespon
-    setLogs(prev => prev.filter(l => l.id !== id));
-    setTotal(prev => Math.max(0, prev - 1));
+    const logToDelete = logs.find((l: any) => l.id === id);
+    
+    // Optimistic update
+    mutate((currentData: any) => {
+      if (!currentData) return currentData;
+      return {
+        ...currentData,
+        data: currentData.data.filter((l: any) => l.id !== id),
+        count: Math.max(0, currentData.count - 1)
+      };
+    }, { revalidate: false });
 
     const toastId = toast.loading("Sedang menghapus...");
 
@@ -191,15 +199,15 @@ export default function LogListPage() {
       if (!res.ok || json.error) throw new Error(json.error || "Gagal menghapus");
 
       toast.success("Log berhasil dihapus", { id: toastId });
+      mutate();
     } catch (err: any) {
       // Rollback jika gagal
-      if (logToDelete) {
-        setLogs(prev => {
-          const newLogs = [...prev, logToDelete];
-          return newLogs.sort((a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
-        });
-        setTotal(prev => prev + 1);
-      }
+      mutate((currentData: any) => {
+        if (!currentData || !logToDelete) return currentData;
+        const newLogs = [...currentData.data, logToDelete].sort((a: any, b: any) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
+        return { ...currentData, data: newLogs, count: currentData.count + 1 };
+      }, { revalidate: false });
+      
       toast.error(err.message || "Gagal menghapus log", { id: toastId });
     }
   };
@@ -387,7 +395,7 @@ export default function LogListPage() {
         ) : (
           <div className="space-y-6 sm:space-y-10 pb-20">
 
-            {Object.entries(groupedLogs).sort((a, b) => Number(b[0]) - Number(a[0])).map(([year, yearLogs]) => (
+            {Object.entries(groupedLogs).sort((a, b) => Number(b[0]) - Number(a[0])).map(([year, yearLogs]: [string, any]) => (
             <div key={year} className="mb-10">
               <div className="sticky top-[56px] lg:top-[68px] z-10 bg-background/95 backdrop-blur py-2 flex items-center gap-2 mb-2 lg:mb-4">
                 <div className="w-1 h-4 bg-primary rounded-full"></div>

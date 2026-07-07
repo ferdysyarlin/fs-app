@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
+import useSWR from "swr";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input, Select } from "@/components/ui/input";
 import { formatDateShort, cn } from "@/lib/utils";
@@ -15,10 +16,8 @@ import type { LogKerja } from "@/types";
 import { LogModal } from "@/components/log/LogModal";
 
 export default function ArsipKinerjaPage() {
-  const [allLogs, setAllLogs] = useState<LogKerja[]>([]);
   const [filteredLogs, setFilteredLogs] = useState<LogKerja[]>([]);
   const [displayedCount, setDisplayedCount] = useState(20);
-  const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const searchParams = useSearchParams();
@@ -35,10 +34,7 @@ export default function ArsipKinerjaPage() {
   const [tahunFilter, setTahunFilter] = useState("");
   const [tanggalFilter, setTanggalFilter] = useState(searchParams.get("date") || "");
 
-  // Dynamic Years
-  const yearOptions = Array.from(
-    new Set(allLogs.map(log => log.tanggal.substring(0, 4)))
-  ).sort((a, b) => Number(b) - Number(a));
+  // Dynamic Years (Moved below)
 
   // Debounce search
   useEffect(() => {
@@ -46,28 +42,25 @@ export default function ArsipKinerjaPage() {
     return () => clearTimeout(t);
   }, [q]);
 
-  const fetchLogs = useCallback(async () => {
-    setLoading(true);
-    setMounted(true);
-    try {
-      const res = await fetch(`/api/google-sheets/arsip`);
-      const json = await res.json();
-      if (!res.ok && json.error) {
-        toast.error(json.error);
-      }
-      const data = json.data || [];
-      // Urutkan data berdasarkan tanggal terbaru
-      data.sort((a: any, b: any) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
-      setAllLogs(data);
-    } catch (error) {
-      console.error(error);
-      toast.error("Gagal mengambil data arsip");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const { data, error, isValidating, mutate } = useSWR('/api/google-sheets/arsip', async (url) => {
+    const res = await fetch(url);
+    const json = await res.json();
+    if (!res.ok && json.error) throw new Error(json.error);
+    const data = json.data || [];
+    return data.sort((a: any, b: any) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
+  }, { keepPreviousData: true });
 
-  useEffect(() => { fetchLogs(); }, [fetchLogs]);
+  const allLogs: LogKerja[] = data || [];
+  const loading = !data && !error && isValidating;
+
+  // Dynamic Years
+  const yearOptions = Array.from(
+    new Set(allLogs.map((log: any) => log.tanggal.substring(0, 4)))
+  ).sort((a: any, b: any) => Number(b) - Number(a));
+
+  const fetchLogs = () => { mutate(); };
+
+  useEffect(() => { setMounted(true); }, []);
 
   // Apply filters on the frontend
   useEffect(() => {
@@ -295,7 +288,7 @@ export default function ArsipKinerjaPage() {
         ) : (
           <div className="space-y-6 sm:space-y-10 pb-20">
 
-            {Object.entries(groupedLogs).sort((a, b) => Number(b[0]) - Number(a[0])).map(([year, yearLogs]) => (
+            {Object.entries(groupedLogs).sort((a, b) => Number(b[0]) - Number(a[0])).map(([year, yearLogs]: [string, any]) => (
             <div key={year} className="mb-10">
               <div className="sticky top-[56px] lg:top-[68px] z-10 bg-background/95 backdrop-blur py-2 flex items-center gap-2 mb-2 lg:mb-4">
                 <div className="w-1 h-4 bg-primary rounded-full"></div>
