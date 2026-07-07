@@ -1,95 +1,31 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { formatDateShort, cn } from "@/lib/utils";
 import {
-  Search, Plus, FileText, Calendar, Trash2, Pin, Link2, Eye, X as XIcon, ExternalLink,
-  RefreshCw, ChevronLeft, ChevronRight, Filter, Paperclip, LayoutGrid, LayoutDashboard, CheckSquare, Download
+  Search, FileText, Calendar, Eye, X as XIcon, ExternalLink,
+  RefreshCw, ChevronLeft, ChevronRight, Filter, Paperclip, LayoutGrid, LayoutDashboard, CheckSquare, ArrowUp
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import type { LogKerja } from "@/types";
 import { LogModal } from "@/components/log/LogModal";
-import { useConfirm } from "@/components/providers/ConfirmProvider";
 
-const PER_PAGE = 100;
-
-export default function LogListPage() {
-  const [logs, setLogs] = useState<LogKerja[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
+export default function ArsipKinerjaPage() {
+  const [allLogs, setAllLogs] = useState<LogKerja[]>([]);
+  const [filteredLogs, setFilteredLogs] = useState<LogKerja[]>([]);
+  const [displayedCount, setDisplayedCount] = useState(20);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const [modalLog, setModalLog] = useState<any>(null);
-  const confirmDialog = useConfirm();
   const [previewImg, setPreviewImg] = useState<{ id: string; url: string; name: string; log?: any } | null>(null);
   const [viewMode, setViewMode] = useState<"masonry" | "gallery">("masonry");
-  const [globalTasks, setGlobalTasks] = useState<any[] | null>(null);
-  const [globalTasklistId, setGlobalTasklistId] = useState("@default");
-
-  const togglePin = async (e: React.MouseEvent, log: any) => {
-    e.stopPropagation();
-    try {
-      const res = await fetch(`/api/log/${log.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_pinned: !log.is_pinned })
-      });
-      if (!res.ok) throw new Error("Gagal menyematkan log");
-      toast.success(log.is_pinned ? "Pin dilepas" : "Log disematkan");
-      fetchLogs();
-    } catch (err) {
-      toast.error("Gagal menyematkan log");
-    }
-  };
-
-  // Open modal: change URL to /log?id=ID
-  const openModal = (log: any) => {
-    router.replace(`/log?id=${log.id}`, { scroll: false });
-    setModalLog(log);
-  };
-
-  const closeModal = () => {
-    router.replace("/log", { scroll: false });
-    setModalLog(null);
-  };
-
-  const handleUpdateLog = (updatedLog: any) => {
-    setLogs(prev => {
-      const exists = prev.find(l => l.id === updatedLog.id);
-      if (exists) {
-        return prev.map(l => l.id === updatedLog.id ? { ...l, ...updatedLog } : l);
-      }
-      return [updatedLog, ...prev].sort((a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
-    });
-  };
-
-  // If page loaded with ?id=ID directly
-  const mid = searchParams.get("id");
-  useEffect(() => {
-    if (mid) {
-      if (modalLog?.id === mid) return;
-      const existing = logs.find(l => l.id === mid);
-      if (existing) {
-        setModalLog(existing);
-      } else {
-        fetch(`/api/log/${mid}`)
-          .then((r) => r.json())
-          .then((json) => { if (json.data) setModalLog(json.data); })
-          .catch(() => { toast.error("Gagal memuat log"); });
-      }
-    } else {
-      setModalLog(null);
-    }
-  }, [mid, logs]);
+  const [showTopBtn, setShowTopBtn] = useState(false);
+  const [modalLog, setModalLog] = useState<LogKerja | null>(null);
 
   // Filters
   const [q, setQ] = useState("");
@@ -99,112 +35,85 @@ export default function LogListPage() {
   const [tahunFilter, setTahunFilter] = useState("");
   const [tanggalFilter, setTanggalFilter] = useState(searchParams.get("date") || "");
 
-  const [yearOptions, setYearOptions] = useState<string[]>([new Date().getFullYear().toString()]);
-
-  useEffect(() => {
-    fetch("/api/log/years")
-      .then(res => res.json())
-      .then(json => {
-        if (json.data && json.data.length > 0) {
-          setYearOptions(json.data);
-        }
-      })
-      .catch(() => {});
-  }, []);
+  // Dynamic Years
+  const yearOptions = Array.from(
+    new Set(allLogs.map(log => log.tanggal.substring(0, 4)))
+  ).sort((a, b) => Number(b) - Number(a));
 
   // Debounce search
   useEffect(() => {
-    const t = setTimeout(() => { setDebouncedQ(q); setPage(1); }, 400);
+    const t = setTimeout(() => { setDebouncedQ(q); }, 400);
     return () => clearTimeout(t);
   }, [q]);
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     setMounted(true);
-
-    const params = new URLSearchParams({
-      page: String(page),
-      per_page: String(PER_PAGE),
-    });
-    if (debouncedQ) params.set("q", debouncedQ);
-    if (statusFilter) params.set("status", statusFilter);
-    if (tanggalFilter) {
-      params.set("tanggal_dari", tanggalFilter);
-      params.set("tanggal_sampai", tanggalFilter);
-    } else {
-      if (bulanFilter) {
-        const y = tahunFilter || new Date().getFullYear().toString();
-        const lastDay = new Date(parseInt(y), parseInt(bulanFilter), 0).getDate();
-        params.set("tanggal_dari", `${y}-${bulanFilter.padStart(2, '0')}-01`);
-        params.set("tanggal_sampai", `${y}-${bulanFilter.padStart(2, '0')}-${lastDay}`);
-      } else if (tahunFilter) {
-        params.set("tanggal_dari", `${tahunFilter}-01-01`);
-        params.set("tanggal_sampai", `${tahunFilter}-12-31`);
-      }
-    }
-
     try {
-      const res = await fetch(`/api/log?${params}`);
+      const res = await fetch(`/api/google-sheets/arsip`);
       const json = await res.json();
-      setLogs(json.data || []);
-      setTotal(json.count || 0);
+      if (!res.ok && json.error) {
+        toast.error(json.error);
+      }
+      const data = json.data || [];
+      // Urutkan data berdasarkan tanggal terbaru
+      data.sort((a: any, b: any) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
+      setAllLogs(data);
     } catch (error) {
       console.error(error);
-      toast.error("Gagal mengambil data log");
+      toast.error("Gagal mengambil data arsip");
     } finally {
       setLoading(false);
     }
-  }, [page, debouncedQ, statusFilter, bulanFilter, tahunFilter, tanggalFilter]);
+  }, []);
 
   useEffect(() => { fetchLogs(); }, [fetchLogs]);
 
+  // Apply filters on the frontend
   useEffect(() => {
-    // Background fetch for instant task load in LogModal
-    fetch("/api/google-tasks")
-      .then(r => r.json())
-      .then(json => {
-        if (json.data) setGlobalTasks(json.data);
-        if (json.tasklistId) setGlobalTasklistId(json.tasklistId);
-      })
-      .catch(() => {});
-  }, []);
-
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    const ok = await confirmDialog({
-      title: "Hapus Log?",
-      message: "Yakin ingin menghapus log ini? Tindakan ini tidak dapat dibatalkan.",
-      confirmText: "Ya, Hapus",
-    });
-    if (!ok) return;
-
-    const logToDelete = logs.find(l => l.id === id);
-    // Optimistic update: hapus dari state langsung agar UI langsung merespon
-    setLogs(prev => prev.filter(l => l.id !== id));
-    setTotal(prev => Math.max(0, prev - 1));
-
-    const toastId = toast.loading("Sedang menghapus...");
-
-    try {
-      const res = await fetch(`/api/log/${id}`, { method: "DELETE" });
-      const json = await res.json();
-      if (!res.ok || json.error) throw new Error(json.error || "Gagal menghapus");
-
-      toast.success("Log berhasil dihapus", { id: toastId });
-    } catch (err: any) {
-      // Rollback jika gagal
-      if (logToDelete) {
-        setLogs(prev => {
-          const newLogs = [...prev, logToDelete];
-          return newLogs.sort((a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
-        });
-        setTotal(prev => prev + 1);
-      }
-      toast.error(err.message || "Gagal menghapus log", { id: toastId });
+    let result = allLogs;
+    if (debouncedQ) {
+      const lowerQ = debouncedQ.toLowerCase();
+      result = result.filter(l => 
+        l.deskripsi?.toLowerCase().includes(lowerQ) ||
+        l.catatan?.toLowerCase().includes(lowerQ)
+      );
     }
+    if (statusFilter) result = result.filter(l => l.status === statusFilter);
+    if (tanggalFilter) {
+      result = result.filter(l => l.tanggal.startsWith(tanggalFilter));
+    } else {
+      if (tahunFilter) {
+        result = result.filter(l => l.tanggal.startsWith(tahunFilter));
+      }
+      if (bulanFilter) {
+        const paddedBulan = bulanFilter.padStart(2, '0');
+        result = result.filter(l => l.tanggal.includes(`-${paddedBulan}-`));
+      }
+    }
+    setFilteredLogs(result);
+    setDisplayedCount(20);
+  }, [allLogs, debouncedQ, statusFilter, bulanFilter, tahunFilter, tanggalFilter]);
+
+  // Infinite Scroll & Scroll to Top
+  useEffect(() => {
+    const handleScroll = () => {
+      // Lazy load
+      if (window.innerHeight + document.documentElement.scrollTop >= document.documentElement.offsetHeight - 800) {
+        setDisplayedCount(prev => Math.min(prev + 20, filteredLogs.length));
+      }
+      // Scroll to Top visibility
+      setShowTopBtn(window.scrollY > 400);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [filteredLogs.length]);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const totalPages = Math.ceil(total / PER_PAGE);
+  const logs = filteredLogs.slice(0, displayedCount);
 
   // Group logs by Year for UI display
   const groupedLogs = logs.reduce((acc, log) => {
@@ -213,11 +122,6 @@ export default function LogListPage() {
     acc[year].push(log);
     return acc;
   }, {} as Record<string, any[]>);
-
-  // Gallery: flatten all images from all logs (with reference to parent log)
-  const galleryImages = logs
-    .filter((log: any) => log.gambar && log.gambar.length > 0)
-    .flatMap((log: any) => (log.gambar as any[]).map((img: any) => ({ ...img, log })));
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -242,7 +146,6 @@ export default function LogListPage() {
   };
 
   const mobileHeader = typeof document !== "undefined" ? document.getElementById("mobile-header-center") : null;
-
   const hasActiveFilters = Boolean(q || statusFilter || bulanFilter || tahunFilter || tanggalFilter);
 
   const clearFilters = () => {
@@ -322,7 +225,7 @@ export default function LogListPage() {
             <Select value={tahunFilter} onChange={(e) => setTahunFilter(e.target.value)} className="w-auto h-9 text-xs rounded-full">
               <option value="">Semua Tahun</option>
               {yearOptions.map(y => (
-                <option key={y} value={y.toString()}>{y}</option>
+                <option key={y} value={y}>{y}</option>
               ))}
             </Select>
             <Input
@@ -356,7 +259,7 @@ export default function LogListPage() {
             <Select value={tahunFilter} onChange={(e) => setTahunFilter(e.target.value)} className="h-9 text-xs">
               <option value="">Semua Tahun</option>
               {yearOptions.map(y => (
-                <option key={y} value={y.toString()}>{y}</option>
+                <option key={y} value={y}>{y}</option>
               ))}
             </Select>
             <Input
@@ -376,13 +279,18 @@ export default function LogListPage() {
               <div key={i} className={`h-${((i % 3) + 3) * 10} rounded-xl shimmer break-inside-avoid w-full`} />
             ))}
           </div>
-        ) : logs.length === 0 ? (
+        ) : allLogs.length === 0 ? (
           <div className="py-20 flex flex-col items-center justify-center text-muted-foreground text-center animate-fade-in px-4">
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
               <FileText size={24} className="opacity-50" />
             </div>
-            <h3 className="text-lg font-semibold text-foreground mb-1">Belum ada log kerja</h3>
-            <p className="text-sm max-w-[250px]">Silakan tambah log baru atau sesuaikan filter pencarian.</p>
+            <h3 className="text-lg font-semibold text-foreground mb-1">Belum ada arsip kinerja</h3>
+            <p className="text-sm max-w-[300px]">Silakan konfigurasi ID Google Sheet atau pastikan sheet memiliki data.</p>
+          </div>
+        ) : filteredLogs.length === 0 ? (
+          <div className="py-20 flex flex-col items-center justify-center text-muted-foreground text-center animate-fade-in px-4">
+            <h3 className="text-lg font-semibold text-foreground mb-1">Data tidak ditemukan</h3>
+            <p className="text-sm">Silakan ubah filter pencarian Anda.</p>
           </div>
         ) : (
           <div className="space-y-6 sm:space-y-10 pb-20">
@@ -407,11 +315,11 @@ export default function LogListPage() {
                     className="break-inside-avoid"
                   >
                     <Card 
+                      onClick={() => setModalLog(log)}
                       className={cn(
                         "hover:shadow-md transition-shadow group overflow-hidden border-2 cursor-pointer",
                         log.is_pinned ? "border-red-500 bg-red-500/5 dark:bg-red-500/10" : getCardBgColor(log.status)
                       )}
-                      onClick={() => openModal(log)}
                     >
                       {log.gambar && log.gambar.length > 0 && (
                         <div className={cn("grid gap-0.5 bg-background",
@@ -477,43 +385,11 @@ export default function LogListPage() {
                                 <Paperclip size={16} />
                               </button>
                             )}
-                            {log.tautan && (
-                              <a
-                                href={log.tautan}
-                                target="_blank"
-                                rel="noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="p-2 rounded hover:bg-background text-muted-foreground hover:text-primary transition-colors"
-                                title="Buka Tautan"
-                              >
-                                <Link2 size={16} />
-                              </a>
-                            )}
-                            <button
-                              className={cn(
-                                "p-2 rounded hover:bg-background transition-colors",
-                                log.is_pinned ? "text-red-500 hover:text-red-600" : "text-muted-foreground hover:text-foreground"
-                              )}
-                              onClick={(e) => togglePin(e, log)}
-                              title={log.is_pinned ? "Lepas Pin" : "Pin Log"}
-                            >
-                              <Pin size={16} className={log.is_pinned ? "fill-current" : ""} />
-                            </button>
                             {log.google_task_ids && log.google_task_ids.length > 0 && (
                               <button className="p-2 rounded hover:bg-background text-primary transition-colors cursor-default" title={`${log.google_task_ids.length} Task Terkait`}>
                                 <CheckSquare size={16} />
                               </button>
                             )}
-                            <button
-                              className="p-2 rounded hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDelete(e, log.id);
-                              }}
-                              title="Hapus"
-                            >
-                              <Trash2 size={16} />
-                            </button>
                           </div>
                         </div>
                       </CardContent>
@@ -530,7 +406,7 @@ export default function LogListPage() {
                         className="break-inside-avoid relative overflow-hidden rounded-xl group cursor-pointer bg-muted"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setPreviewImg({ id: item.id, url: item.url, name: item.name, log: item.log });
+                          setModalLog(item.log);
                         }}
                       >
                         <img
@@ -561,25 +437,20 @@ export default function LogListPage() {
           ))}
           </div>
         )}
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-3 mt-10">
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="rounded-full px-4">
-              <ChevronLeft size={14} className="mr-1" /> Prev
-            </Button>
-            <span className="text-sm font-medium text-muted-foreground">
-              {page} / {totalPages}
-            </span>
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="rounded-full px-4">
-              Next <ChevronRight size={14} className="ml-1" />
-            </Button>
-          </div>
-        )}
       </div>
 
       {/* Floating Action Buttons */}
       <div className="fixed bottom-6 right-6 flex flex-col gap-2 z-30">
+        {/* Scroll to Top */}
+        {showTopBtn && (
+          <button
+            title="Kembali ke Atas"
+            onClick={scrollToTop}
+            className="w-10 h-10 rounded-full bg-primary text-primary-foreground shadow-md flex items-center justify-center hover:scale-110 transition-all mb-2 animate-fade-in"
+          >
+            <ArrowUp size={18} />
+          </button>
+        )}
         {/* Toggle View Mode */}
         <button
           title={viewMode === "masonry" ? "Beralih ke Gallery" : "Beralih ke Masonry"}
@@ -595,27 +466,7 @@ export default function LogListPage() {
         >
           <RefreshCw size={16} />
         </button>
-        <button
-          title="Tambah Log"
-          onClick={() => setModalLog({})}
-          className="w-10 h-10 rounded-full bg-primary text-primary-foreground shadow-md shadow-primary/30 flex items-center justify-center hover:scale-110 hover:shadow-lg transition-all"
-        >
-          <Plus size={18} />
-        </button>
       </div>
-
-      {/* Log Detail Modal */}
-      {modalLog && (
-        <LogModal
-          log={Object.keys(modalLog).length > 0 ? modalLog : null}
-          isNew={Object.keys(modalLog).length === 0}
-          loading={loading && modalLog === "loading"}
-          onClose={closeModal}
-          onUpdate={handleUpdateLog}
-          allGoogleTasks={globalTasks}
-          globalTasklistId={globalTasklistId}
-        />
-      )}
 
       {/* Lightbox Preview */}
       {previewImg && typeof document !== "undefined" && createPortal(
@@ -682,17 +533,19 @@ export default function LogListPage() {
             >
               <ExternalLink size={12} /> Buka di Drive
             </a>
-            {previewImg.log && (
-              <button
-                onClick={(e) => { e.stopPropagation(); setPreviewImg(null); openModal(previewImg.log); }}
-                className="px-3 py-1 bg-primary text-primary-foreground rounded-full text-xs font-medium flex items-center gap-1.5 hover:bg-primary/80 transition-colors"
-              >
-                <FileText size={12} /> Lihat Detail Log
-              </button>
-            )}
           </div>
         </div>,
         document.body
+      )}
+
+      {/* Modal Detail Log (Read-Only) */}
+      {modalLog && (
+        <LogModal
+          log={modalLog as any}
+          readOnly={true}
+          onClose={() => setModalLog(null)}
+          onUpdate={() => {}}
+        />
       )}
     </div>
   );

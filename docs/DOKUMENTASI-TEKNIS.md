@@ -256,6 +256,15 @@ Menggantikan `window.confirm()` bawaan browser dengan dialog kustom berdesain ko
 - **Jam Masuk & Pulang**: Input text dengan format otomatis `HH:MM`. Mengetik `0730` akan otomatis diformat menjadi `07:30`.
 - **Isi Otomatis Jam**: Saat membuat log baru, jam masuk otomatis terisi `07:30`, jam pulang terisi `16:00` (Senin-Kamis) atau `16:30` (Jumat) berdasarkan tanggal yang dipilih.
 - **Tautan Task (Google Tasks)**: Task yang ditautkan ke log ini akan muncul secara instan di bagian bawah form berkat mekanisme *background prefetching*. Pengguna dapat mengedit task (judul, catatan, tenggat waktu) atau menandainya selesai langsung dari dalam modal log.
+- **Mode Read-Only**: Digunakan di halaman Arsip Kinerja (`readOnly={true}`). Semua tombol aksi (simpan, tambah, hapus) dan input akan dinonaktifkan secara otomatis tanpa merusak *layout* tampilan.
+
+### `/arsip-kinerja` — Arsip Kinerja (Google Sheets)
+
+- Menampilkan daftar log kinerja masa lalu yang bersumber dari arsip Google Sheets (tab `arsip-kinerja`).
+- Data diambil secara utuh (*no pagination* dari server) via endpoint `api/google-sheets/arsip`.
+- Menerapkan **Lazy Loading (Infinite Scroll)** di *client-side* untuk menjaga performa rendering tetap ringan.
+- Memiliki fitur Filter yang sama persis dengan halaman Log aktif.
+- Klik pada kartu log akan memunculkan **LogModal** dalam mode *read-only*.
 
 ### `/tasks` — Daftar Tasks (To-Do)
 
@@ -359,6 +368,7 @@ File: [`components/shared/Sidebar.tsx`](../components/shared/Sidebar.tsx)
 | Menu | Route | Ikon |
 |---|---|---|
 | Log Kerja | `/log` | FileText |
+| Arsip Kinerja | `/arsip-kinerja` | Database |
 | Tasks | `/tasks` | CheckSquare |
 | Laporan | `/laporan` | BarChart2 |
 | Pengaturan | `/settings` | Settings |
@@ -369,7 +379,7 @@ File: [`components/shared/Sidebar.tsx`](../components/shared/Sidebar.tsx)
 - `app/(app)/loading.tsx` berfungsi sebagai *Suspense boundary* global: transisi antar halaman terasa **instan** karena browser langsung merespons klik sambil konten dimuat di balik layar.
 
 > [!NOTE]
-> Menu **Kinerja** (`/kinerja`), **Arsip** (`/arsip`), dan **Pencarian** (`/search`) telah **dihapus** dari sidebar.
+> Menu **Kinerja** (lama: `/kinerja`) dan **Pencarian** (`/search`) telah **dihapus** dari sidebar. Menu Arsip Kinerja (`/arsip-kinerja`) telah ditambahkan untuk mengakses data lampau yang diarsipkan di Google Sheets.
 
 ---
 

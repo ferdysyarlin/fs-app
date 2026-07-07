@@ -11,21 +11,21 @@ export async function googleApiFetch(url: string, options: RequestInit = {}) {
   }
   
   let accessToken = session.provider_token;
-  if (!accessToken) {
-    throw new Error("Google access token tidak tersedia. Silakan logout lalu login ulang.");
+
+  // Coba request pertama jika ada access token
+  let res;
+  if (accessToken) {
+    res = await fetch(url, {
+      ...options,
+      headers: {
+        ...options.headers,
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
   }
 
-  // Coba request pertama
-  let res = await fetch(url, {
-    ...options,
-    headers: {
-      ...options.headers,
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-
-  // Jika unauthorized, coba refresh token
-  if (res.status === 401) {
+  // Jika tidak ada access token (misal reload) atau unauthorized (expired), coba refresh token
+  if (!accessToken || res?.status === 401) {
     const { data: userSettings, error: dbError } = await supabase
       .from("user_settings")
       .select("value")
@@ -75,7 +75,7 @@ export async function googleApiFetch(url: string, options: RequestInit = {}) {
           }, { onConflict: "user_id, key" });
     }
 
-    // Retry request
+    // Retry request dengan access token baru
     res = await fetch(url, {
       ...options,
       headers: {

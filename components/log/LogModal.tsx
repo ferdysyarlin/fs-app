@@ -52,6 +52,7 @@ interface LogModalProps {
   isNew?: boolean;
   allGoogleTasks?: any[] | null;
   globalTasklistId?: string;
+  readOnly?: boolean;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -72,7 +73,7 @@ const getFileIcon = (type: string) => {
   return <FileIcon size={16} className="text-gray-500" />;
 };
 
-function AutoResizeTextarea({ value, onChange, placeholder, className, minRows = 1 }: any) {
+function AutoResizeTextarea({ value, onChange, placeholder, className, minRows = 1, readOnly }: any) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -158,6 +159,7 @@ function AutoResizeTextarea({ value, onChange, placeholder, className, minRows =
       onKeyDown={handleKeyDown}
       placeholder={placeholder}
       rows={minRows}
+      readOnly={readOnly}
       className={cn("w-full bg-transparent border-none outline-none resize-none overflow-hidden placeholder:text-muted-foreground", className)}
     />
   );
@@ -171,7 +173,7 @@ const formatTimeInput = (val: string) => {
   return digits;
 };
 
-export function LogModal({ log, loading, onClose, onUpdate, isNew, allGoogleTasks, globalTasklistId }: LogModalProps) {
+export function LogModal({ log, loading, onClose, onUpdate, isNew, allGoogleTasks, globalTasklistId, readOnly }: LogModalProps) {
   const [deskripsi, setDeskripsi] = useState(log?.deskripsi || "");
   const [catatan, setCatatan] = useState(log?.catatan || "");
   const [tautan, setTautan] = useState(log?.tautan || "");
@@ -502,8 +504,8 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew, allGoogleTask
 
                 <div className="relative">
                   <button 
-                    onClick={(e) => { e.stopPropagation(); setShowStatusDropdown(!showStatusDropdown); }}
-                    className={cn("px-4 py-1.5 rounded-full text-xs font-bold tracking-wider border hover:opacity-80 transition-opacity flex items-center gap-2", STATUS_COLORS[status] ?? "bg-gray-100 text-gray-600 border-gray-200")}
+                    onClick={(e) => { e.stopPropagation(); if (!readOnly) setShowStatusDropdown(!showStatusDropdown); }}
+                    className={cn("px-4 py-1.5 rounded-full text-xs font-bold tracking-wider border transition-opacity flex items-center gap-2", STATUS_COLORS[status] ?? "bg-gray-100 text-gray-600 border-gray-200", !readOnly && "hover:opacity-80")}
                   >
                     {status.toUpperCase()}
                   </button>
@@ -530,8 +532,8 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew, allGoogleTask
                 <div className="flex-1 relative">
                   <div className="flex items-center gap-3 flex-wrap">
                     <button 
-                      onClick={(e) => { e.stopPropagation(); setShowStatusDropdown(!showStatusDropdown); }}
-                      className={cn("px-3 py-1 rounded-full text-[10px] font-bold tracking-wider border hover:opacity-80 transition-opacity", STATUS_COLORS[status] ?? "bg-gray-100 text-gray-600 border-gray-200")}
+                      onClick={(e) => { e.stopPropagation(); if (!readOnly) setShowStatusDropdown(!showStatusDropdown); }}
+                      className={cn("px-3 py-1 rounded-full text-[10px] font-bold tracking-wider border transition-opacity", STATUS_COLORS[status] ?? "bg-gray-100 text-gray-600 border-gray-200", !readOnly && "hover:opacity-80")}
                     >
                       {status.toUpperCase()}
                     </button>
@@ -558,8 +560,9 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew, allGoogleTask
                     <input 
                       type="date"
                       value={tanggal}
+                      disabled={readOnly}
                       onChange={(e) => setTanggal(e.target.value)}
-                      className="bg-transparent border-none outline-none text-sm text-muted-foreground cursor-pointer focus:text-foreground transition-colors"
+                      className="bg-transparent border-none outline-none text-sm text-muted-foreground cursor-pointer focus:text-foreground transition-colors disabled:opacity-80"
                     />
                   </div>
                 </div>
@@ -573,6 +576,7 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew, allGoogleTask
                   placeholder="Tulis deskripsi log kerja di sini..."
                   className="text-sm text-foreground leading-relaxed"
                   minRows={3}
+                  readOnly={readOnly}
                 />
               </div>
 
@@ -587,7 +591,8 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew, allGoogleTask
                     onChange={(e) => setJamMasuk(formatTimeInput(e.target.value))}
                     placeholder="07.30"
                     maxLength={5}
-                    className="w-full bg-muted/50 border border-border/50 rounded-md px-2 py-1.5 text-xs text-foreground outline-none focus:border-primary transition-colors placeholder:text-muted-foreground"
+                    disabled={readOnly}
+                    className="w-full bg-muted/50 border border-border/50 rounded-md px-2 py-1.5 text-xs text-foreground outline-none focus:border-primary transition-colors placeholder:text-muted-foreground disabled:opacity-80"
                   />
                 </div>
                 {/* Jam Pulang */}
@@ -599,7 +604,8 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew, allGoogleTask
                     onChange={(e) => setJamPulang(formatTimeInput(e.target.value))}
                     placeholder="17.00"
                     maxLength={5}
-                    className="w-full bg-muted/50 border border-border/50 rounded-md px-2 py-1.5 text-xs text-foreground outline-none focus:border-primary transition-colors placeholder:text-muted-foreground"
+                    disabled={readOnly}
+                    className="w-full bg-muted/50 border border-border/50 rounded-md px-2 py-1.5 text-xs text-foreground outline-none focus:border-primary transition-colors placeholder:text-muted-foreground disabled:opacity-80"
                   />
                 </div>
               </div>
@@ -612,6 +618,7 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew, allGoogleTask
                   onChange={(e: any) => setCatatan(e.target.value)}
                   placeholder="Tambahkan catatan (opsional)"
                   className="text-sm text-foreground"
+                  readOnly={readOnly}
                 />
               </div>
 
@@ -700,6 +707,7 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew, allGoogleTask
                         
                         return (
                           <div key={task.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/60 border border-border/50 group cursor-pointer" onClick={() => {
+                            if (readOnly) return;
                             setSelectedEditTask(task);
                             setEditTaskTitle(task.title.replace(/^⭐\s*/, ""));
                             setEditTaskNotes(task.notes || "");
@@ -708,6 +716,7 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew, allGoogleTask
                             <button
                               onClick={async (e) => {
                                 e.stopPropagation();
+                                if (readOnly) return;
                                 const isDone = task.status === "completed";
                                 const res = await fetch(`/api/google-tasks/${task.id}`, {
                                   method: "PUT",
@@ -728,20 +737,22 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew, allGoogleTask
                             <span className={cn("flex-1 text-xs truncate", task.status === "completed" && "line-through text-muted-foreground")}>
                               {task.title}
                             </span>
-                            <button
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                const res = await fetch(`/api/google-tasks/link?log_kerja_id=${log.id}&task_id=${task.id}`, { method: "DELETE" });
-                                if (res.ok) {
-                                  setLinkedTaskIds(prev => prev.filter(id => id !== task.id));
-                                  setLinkedTaskDetails(prev => prev.filter(t => t.id !== task.id));
-                                }
-                              }}
-                              className="opacity-0 group-hover:opacity-100 flex-shrink-0 text-muted-foreground hover:text-red-500 transition-all p-0.5"
-                              title="Lepas tautan"
-                            >
-                              <X size={12} />
-                            </button>
+                            {!readOnly && (
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  const res = await fetch(`/api/google-tasks/link?log_kerja_id=${log.id}&task_id=${task.id}`, { method: "DELETE" });
+                                  if (res.ok) {
+                                    setLinkedTaskIds(prev => prev.filter(id => id !== task.id));
+                                    setLinkedTaskDetails(prev => prev.filter(t => t.id !== task.id));
+                                  }
+                                }}
+                                className="opacity-0 group-hover:opacity-100 flex-shrink-0 text-muted-foreground hover:text-red-500 transition-all p-0.5"
+                                title="Lepas tautan"
+                              >
+                                <X size={12} />
+                              </button>
+                            )}
                           </div>
                         );
                       })}
@@ -867,21 +878,23 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew, allGoogleTask
                         </div>
                       </div>
                     )}
-                    <div className="flex items-center gap-2 mt-2">
-                      <button
-                        onClick={() => { setShowTaskPicker(v => !v); setShowNewTaskForm(false); }}
-                        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors font-medium"
-                      >
-                        <Plus size={14} /> Tautkan Task
-                      </button>
-                      <span className="text-muted-foreground/40 text-xs mx-1">·</span>
-                      <button
-                        onClick={() => { setShowNewTaskForm(v => !v); setShowTaskPicker(false); setTimeout(() => newTaskTitleRef.current?.focus(), 50); }}
-                        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors font-medium"
-                      >
-                        <Plus size={14} /> Buat & Tautkan
-                      </button>
-                    </div>
+                    {!readOnly && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <button
+                          onClick={() => { setShowTaskPicker(v => !v); setShowNewTaskForm(false); }}
+                          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors font-medium"
+                        >
+                          <Plus size={14} /> Tautkan Task
+                        </button>
+                        <span className="text-muted-foreground/40 text-xs mx-1">·</span>
+                        <button
+                          onClick={() => { setShowNewTaskForm(v => !v); setShowTaskPicker(false); setTimeout(() => newTaskTitleRef.current?.focus(), 50); }}
+                          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors font-medium"
+                        >
+                          <Plus size={14} /> Buat & Tautkan
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -915,28 +928,30 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew, allGoogleTask
                             <ExternalLink size={16} />
                           </a>
                           {/* Hapus */}
-                          <button
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              const ok = await confirmDialog({
-                                title: "Hapus Gambar?",
-                                message: `Gambar "${img.name}" akan dihapus permanen dari Drive dan tidak bisa dikembalikan.`,
-                                confirmText: "Hapus",
-                              });
-                              if (!ok) return;
-                              const delRes = await fetch(`/api/files?log_kerja_id=${log?.id}&drive_file_id=${img.id}`, { method: "DELETE" });
-                              if (delRes.ok) {
-                                setSavedImages(prev => prev.filter(i => i.id !== img.id));
-                                toast.success("Gambar berhasil dihapus");
-                              } else {
-                                toast.error("Gagal menghapus gambar");
-                              }
-                            }}
-                            className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-600 text-white transition-colors opacity-0 group-hover:opacity-100"
-                            title="Hapus Gambar"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          {!readOnly && (
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const ok = await confirmDialog({
+                                  title: "Hapus Gambar?",
+                                  message: `Gambar "${img.name}" akan dihapus permanen dari Drive dan tidak bisa dikembalikan.`,
+                                  confirmText: "Hapus",
+                                });
+                                if (!ok) return;
+                                const delRes = await fetch(`/api/files?log_kerja_id=${log?.id}&drive_file_id=${img.id}`, { method: "DELETE" });
+                                if (delRes.ok) {
+                                  setSavedImages(prev => prev.filter(i => i.id !== img.id));
+                                  toast.success("Gambar berhasil dihapus");
+                                } else {
+                                  toast.error("Gagal menghapus gambar");
+                                }
+                              }}
+                              className="p-1.5 rounded-full bg-red-500/80 hover:bg-red-600 text-white transition-colors opacity-0 group-hover:opacity-100"
+                              title="Hapus Gambar"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -978,28 +993,30 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew, allGoogleTask
                           >
                             <ExternalLink size={16} />
                           </a>
-                          <button
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              const ok = await confirmDialog({
-                                title: "Hapus Dokumen?",
-                                message: `Dokumen "${doc.name}" akan dihapus permanen dari Drive dan tidak bisa dikembalikan.`,
-                                confirmText: "Hapus",
-                              });
-                              if (!ok) return;
-                              const delRes = await fetch(`/api/files?log_kerja_id=${log?.id}&drive_file_id=${doc.id}&file_category=dokumen`, { method: "DELETE" });
-                              if (delRes.ok) {
-                                setSavedDocs(prev => prev.filter(i => i.id !== doc.id));
-                                toast.success("Dokumen berhasil dihapus");
-                              } else {
-                                toast.error("Gagal menghapus dokumen");
-                              }
-                            }}
-                            className="p-1.5 rounded-md hover:bg-red-500/20 text-red-500 transition-colors"
-                            title="Hapus Dokumen"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          {!readOnly && (
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const ok = await confirmDialog({
+                                  title: "Hapus Dokumen?",
+                                  message: `Dokumen "${doc.name}" akan dihapus permanen dari Drive dan tidak bisa dikembalikan.`,
+                                  confirmText: "Hapus",
+                                });
+                                if (!ok) return;
+                                const delRes = await fetch(`/api/files?log_kerja_id=${log?.id}&drive_file_id=${doc.id}&file_category=dokumen`, { method: "DELETE" });
+                                if (delRes.ok) {
+                                  setSavedDocs(prev => prev.filter(i => i.id !== doc.id));
+                                  toast.success("Dokumen berhasil dihapus");
+                                } else {
+                                  toast.error("Gagal menghapus dokumen");
+                                }
+                              }}
+                              className="p-1.5 rounded-md hover:bg-red-500/20 text-red-500 transition-colors"
+                              title="Hapus Dokumen"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -1010,229 +1027,231 @@ export function LogModal({ log, loading, onClose, onUpdate, isNew, allGoogleTask
 
 
               {/* Action Bar (Tags & Image & Link) */}
-              <div className="flex flex-col gap-3 pt-3 border-t border-border">
-                {/* Preview Pending Files (sebelum di-upload) */}
-                {(pendingFiles.length > 0 || pendingDocs.length > 0) && (
-                  <div className="flex flex-col gap-2 mb-2">
-                    {/* Images */}
-                    {pendingFiles.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {pendingFiles.map((f, i) => (
-                          <div key={i} className="relative group rounded-md overflow-hidden border border-border w-16 h-16">
-                            <img src={URL.createObjectURL(f)} alt="preview" className="w-full h-full object-cover" />
-                            <button 
-                              onClick={() => setPendingFiles(prev => prev.filter((_, idx) => idx !== i))}
-                              className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <X size={16} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {/* Docs */}
-                    {pendingDocs.length > 0 && (
-                      <div className="flex flex-col gap-1.5">
-                        {pendingDocs.map((f, i) => (
-                          <div key={i} className="flex items-center justify-between p-1.5 pl-2.5 rounded-md bg-muted text-xs border border-border">
-                            <div className="flex items-center gap-2 overflow-hidden">
-                              {getFileIcon(f.type)}
-                              <span className="truncate max-w-[200px] font-medium">{f.name}</span>
-                              <span className="text-muted-foreground">({(f.size / 1024).toFixed(1)} KB)</span>
+              {!readOnly && (
+                <div className="flex flex-col gap-3 pt-3 border-t border-border">
+                  {/* Preview Pending Files (sebelum di-upload) */}
+                  {(pendingFiles.length > 0 || pendingDocs.length > 0) && (
+                    <div className="flex flex-col gap-2 mb-2">
+                      {/* Images */}
+                      {pendingFiles.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {pendingFiles.map((f, i) => (
+                            <div key={i} className="relative group rounded-md overflow-hidden border border-border w-16 h-16">
+                              <img src={URL.createObjectURL(f)} alt="preview" className="w-full h-full object-cover" />
+                              <button 
+                                onClick={() => setPendingFiles(prev => prev.filter((_, idx) => idx !== i))}
+                                className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X size={16} />
+                              </button>
                             </div>
-                            <button 
-                              onClick={() => setPendingDocs(prev => prev.filter((_, idx) => idx !== i))}
-                              className="text-muted-foreground hover:text-red-500 p-1"
-                            >
-                              <X size={14} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-                
-                {/* Link Display (if any) */}
-                {tautan && (
-                  <div className="flex items-center gap-1.5 mb-1 text-xs">
-                    <LinkIcon size={12} className="text-muted-foreground" />
-                    <a href={tautan} target="_blank" rel="noreferrer" className="text-primary hover:underline truncate max-w-[250px]">
-                      {tautan}
-                    </a>
-                    <button onClick={() => setTautan("")} className="hover:text-red-500 text-muted-foreground ml-1">
-                      <X size={12} />
-                    </button>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-4 relative w-full">
-
-                  {/* Link Button */}
-                  <div className="relative" ref={linkPickerRef}>
-                    <button 
-                      onClick={() => setShowLinkPicker(!showLinkPicker)}
-                      className={cn("flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-foreground", showLinkPicker || tautan ? "text-primary" : "text-muted-foreground")}
-                      title="Tambahkan Tautan"
-                    >
-                      <LinkIcon size={16} />
-                    </button>
-                    
-                    {/* Link Popover */}
-                    {showLinkPicker && (
-                      <div className="absolute bottom-8 left-0 z-20 w-64 bg-popover border border-border rounded-lg shadow-xl p-2 animate-in fade-in zoom-in-95 duration-100 flex items-center gap-2">
-                        <input 
-                          type="url" 
-                          placeholder="https://..." 
-                          value={tautan}
-                          onChange={(e) => setTautan(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              setShowLinkPicker(false);
-                            }
-                          }}
-                          className="w-full bg-muted border-none outline-none text-xs p-2 rounded-md" 
-                          autoFocus
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Image Upload Button */}
-                  <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    className={cn("flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-foreground", pendingFiles.length > 0 ? "text-primary" : "text-muted-foreground")}
-                    title="Tambahkan Gambar"
-                  >
-                    <ImageIcon size={16} />
-                  </button>
-                  <input 
-                    type="file" 
-                    accept=".jpg,.jpeg,.png,.webp" 
-                    multiple
-                    className="hidden" 
-                    ref={fileInputRef}
-                    onChange={async (e) => {
-                      if (!e.target.files || e.target.files.length === 0) return;
+                          ))}
+                        </div>
+                      )}
                       
-                      const files = Array.from(e.target.files);
-                      const validFiles: File[] = [];
-                      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+                      {/* Docs */}
+                      {pendingDocs.length > 0 && (
+                        <div className="flex flex-col gap-1.5">
+                          {pendingDocs.map((f, i) => (
+                            <div key={i} className="flex items-center justify-between p-1.5 pl-2.5 rounded-md bg-muted text-xs border border-border">
+                              <div className="flex items-center gap-2 overflow-hidden">
+                                {getFileIcon(f.type)}
+                                <span className="truncate max-w-[200px] font-medium">{f.name}</span>
+                                <span className="text-muted-foreground">({(f.size / 1024).toFixed(1)} KB)</span>
+                              </div>
+                              <button 
+                                onClick={() => setPendingDocs(prev => prev.filter((_, idx) => idx !== i))}
+                                className="text-muted-foreground hover:text-red-500 p-1"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Link Display (if any) */}
+                  {tautan && (
+                    <div className="flex items-center gap-1.5 mb-1 text-xs">
+                      <LinkIcon size={12} className="text-muted-foreground" />
+                      <a href={tautan} target="_blank" rel="noreferrer" className="text-primary hover:underline truncate max-w-[250px]">
+                        {tautan}
+                      </a>
+                      <button onClick={() => setTautan("")} className="hover:text-red-500 text-muted-foreground ml-1">
+                        <X size={12} />
+                      </button>
+                    </div>
+                  )}
 
-                      setIsCompressing(true);
-                      const toastId = toast.loading("Memproses gambar...");
+                  <div className="flex items-center gap-4 relative w-full">
 
-                      try {
+                    {/* Link Button */}
+                    <div className="relative" ref={linkPickerRef}>
+                      <button 
+                        onClick={() => setShowLinkPicker(!showLinkPicker)}
+                        className={cn("flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-foreground", showLinkPicker || tautan ? "text-primary" : "text-muted-foreground")}
+                        title="Tambahkan Tautan"
+                      >
+                        <LinkIcon size={16} />
+                      </button>
+                      
+                      {/* Link Popover */}
+                      {showLinkPicker && (
+                        <div className="absolute bottom-8 left-0 z-20 w-64 bg-popover border border-border rounded-lg shadow-xl p-2 animate-in fade-in zoom-in-95 duration-100 flex items-center gap-2">
+                          <input 
+                            type="url" 
+                            placeholder="https://..." 
+                            value={tautan}
+                            onChange={(e) => setTautan(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                setShowLinkPicker(false);
+                              }
+                            }}
+                            className="w-full bg-muted border-none outline-none text-xs p-2 rounded-md" 
+                            autoFocus
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Image Upload Button */}
+                    <button 
+                      onClick={() => fileInputRef.current?.click()}
+                      className={cn("flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-foreground", pendingFiles.length > 0 ? "text-primary" : "text-muted-foreground")}
+                      title="Tambahkan Gambar"
+                    >
+                      <ImageIcon size={16} />
+                    </button>
+                    <input 
+                      type="file" 
+                      accept=".jpg,.jpeg,.png,.webp" 
+                      multiple
+                      className="hidden" 
+                      ref={fileInputRef}
+                      onChange={async (e) => {
+                        if (!e.target.files || e.target.files.length === 0) return;
+                        
+                        const files = Array.from(e.target.files);
+                        const validFiles: File[] = [];
+                        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+
+                        setIsCompressing(true);
+                        const toastId = toast.loading("Memproses gambar...");
+
+                        try {
+                          for (const file of files) {
+                            if (!allowedTypes.includes(file.type)) {
+                              toast.error(`File ${file.name} ditolak. Hanya menerima JPG, PNG, atau WebP.`);
+                              continue;
+                            }
+
+                            // Selalu kompres semua gambar ke target < 500 KB
+                            // initialQuality: 0.85 → library mulai dari kualitas tinggi,
+                            // lalu turun perlahan hanya jika perlu mencapai target ukuran
+                            try {
+                              const options = {
+                                maxSizeMB: 0.5,           // Target maksimal 500 KB
+                                maxWidthOrHeight: 1920,   // Full HD — resolusi cukup tajam
+                                initialQuality: 0.85,     // Mulai di kualitas 85%, turun hanya jika perlu
+                                useWebWorker: true,
+                              };
+                              const compressedBlob = await imageCompression(file, options);
+                              const compressedFile = new File([compressedBlob], file.name, {
+                                type: compressedBlob.type,
+                                lastModified: Date.now(),
+                              });
+                              validFiles.push(compressedFile);
+                            } catch (err) {
+                              console.error("Gagal kompresi:", err);
+                              toast.error(`Gagal memproses gambar ${file.name}`);
+                            }
+                          }
+
+                          if (validFiles.length > 0) {
+                            setPendingFiles(prev => [...prev, ...validFiles]);
+                            toast.success(`${validFiles.length} gambar berhasil ditambahkan`, { id: toastId });
+                          } else {
+                            toast.dismiss(toastId);
+                          }
+                        } finally {
+                          setIsCompressing(false);
+                          if (fileInputRef.current) fileInputRef.current.value = '';
+                        }
+                      }}
+                    />
+
+                    {/* Document Upload Button */}
+                    <button 
+                      onClick={() => docInputRef.current?.click()}
+                      className={cn("flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-foreground", pendingDocs.length > 0 ? "text-primary" : "text-muted-foreground")}
+                      title="Tambahkan Dokumen"
+                    >
+                      <Paperclip size={16} />
+                    </button>
+                    <input 
+                      type="file" 
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx" 
+                      multiple
+                      className="hidden" 
+                      ref={docInputRef}
+                      onChange={(e) => {
+                        if (!e.target.files || e.target.files.length === 0) return;
+                        
+                        const files = Array.from(e.target.files);
+                        const validDocs: File[] = [];
+                        const allowedTypes = [
+                          "application/pdf",
+                          "application/msword",
+                          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                          "application/vnd.ms-excel",
+                          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                          "application/vnd.ms-powerpoint",
+                          "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                        ];
+
                         for (const file of files) {
-                          if (!allowedTypes.includes(file.type)) {
-                            toast.error(`File ${file.name} ditolak. Hanya menerima JPG, PNG, atau WebP.`);
+                          if (!allowedTypes.includes(file.type) && !file.name.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx)$/i)) {
+                            toast.error(`File ${file.name} ditolak. Hanya PDF/Word/Excel/PowerPoint.`);
                             continue;
                           }
-
-                          // Selalu kompres semua gambar ke target < 500 KB
-                          // initialQuality: 0.85 → library mulai dari kualitas tinggi,
-                          // lalu turun perlahan hanya jika perlu mencapai target ukuran
-                          try {
-                            const options = {
-                              maxSizeMB: 0.5,           // Target maksimal 500 KB
-                              maxWidthOrHeight: 1920,   // Full HD — resolusi cukup tajam
-                              initialQuality: 0.85,     // Mulai di kualitas 85%, turun hanya jika perlu
-                              useWebWorker: true,
-                            };
-                            const compressedBlob = await imageCompression(file, options);
-                            const compressedFile = new File([compressedBlob], file.name, {
-                              type: compressedBlob.type,
-                              lastModified: Date.now(),
-                            });
-                            validFiles.push(compressedFile);
-                          } catch (err) {
-                            console.error("Gagal kompresi:", err);
-                            toast.error(`Gagal memproses gambar ${file.name}`);
+                          if (file.size > 1024 * 1024) {
+                            toast.error(`Ukuran file ${file.name} terlalu besar (Max 1 MB)`);
+                            continue;
                           }
+                          validDocs.push(file);
                         }
 
-                        if (validFiles.length > 0) {
-                          setPendingFiles(prev => [...prev, ...validFiles]);
-                          toast.success(`${validFiles.length} gambar berhasil ditambahkan`, { id: toastId });
-                        } else {
-                          toast.dismiss(toastId);
+                        if (validDocs.length > 0) {
+                          setPendingDocs(prev => [...prev, ...validDocs]);
                         }
-                      } finally {
-                        setIsCompressing(false);
-                        if (fileInputRef.current) fileInputRef.current.value = '';
-                      }
-                    }}
-                  />
-
-                  {/* Document Upload Button */}
-                  <button 
-                    onClick={() => docInputRef.current?.click()}
-                    className={cn("flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-foreground", pendingDocs.length > 0 ? "text-primary" : "text-muted-foreground")}
-                    title="Tambahkan Dokumen"
-                  >
-                    <Paperclip size={16} />
-                  </button>
-                  <input 
-                    type="file" 
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx" 
-                    multiple
-                    className="hidden" 
-                    ref={docInputRef}
-                    onChange={(e) => {
-                      if (!e.target.files || e.target.files.length === 0) return;
-                      
-                      const files = Array.from(e.target.files);
-                      const validDocs: File[] = [];
-                      const allowedTypes = [
-                        "application/pdf",
-                        "application/msword",
-                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                        "application/vnd.ms-excel",
-                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                        "application/vnd.ms-powerpoint",
-                        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                      ];
-
-                      for (const file of files) {
-                        if (!allowedTypes.includes(file.type) && !file.name.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx)$/i)) {
-                          toast.error(`File ${file.name} ditolak. Hanya PDF/Word/Excel/PowerPoint.`);
-                          continue;
-                        }
-                        if (file.size > 1024 * 1024) {
-                          toast.error(`Ukuran file ${file.name} terlalu besar (Max 1 MB)`);
-                          continue;
-                        }
-                        validDocs.push(file);
-                      }
-
-                      if (validDocs.length > 0) {
-                        setPendingDocs(prev => [...prev, ...validDocs]);
-                      }
-                      
-                      if (docInputRef.current) docInputRef.current.value = '';
-                    }}
-                  />
-
-                  {/* Mobile Date (Moved to action bar) */}
-                  <div className="flex sm:hidden items-center gap-2 bg-muted/50 px-2.5 py-1.5 rounded-md border border-border/50 ml-auto">
-                    <Calendar size={13} className="text-muted-foreground" />
-                    <input 
-                      type="date"
-                      value={tanggal}
-                      onChange={(e) => setTanggal(e.target.value)}
-                      className="bg-transparent border-none outline-none text-sm text-muted-foreground cursor-pointer focus:text-foreground transition-colors"
+                        
+                        if (docInputRef.current) docInputRef.current.value = '';
+                      }}
                     />
+
+                    {/* Mobile Date (Moved to action bar) */}
+                    <div className="flex sm:hidden items-center gap-2 bg-muted/50 px-2.5 py-1.5 rounded-md border border-border/50 ml-auto">
+                      <Calendar size={13} className="text-muted-foreground" />
+                      <input 
+                        type="date"
+                        value={tanggal}
+                        onChange={(e) => setTanggal(e.target.value)}
+                        className="bg-transparent border-none outline-none text-sm text-muted-foreground cursor-pointer focus:text-foreground transition-colors"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </div>
 
         {/* Save Footer - Outside the box */}
-        {(isDirty || isNew) && !loading && (log || isNew) && (
+        {(isDirty || isNew) && !loading && (log || isNew) && !readOnly && (
           <div className="pointer-events-auto absolute bottom-4 right-4 sm:static sm:flex sm:justify-end sm:w-full sm:max-w-2xl animate-in slide-in-from-bottom-2 duration-200">
             <Button onClick={handleSave} disabled={saving} className="gap-2 shadow-xl rounded-full px-6 hover:scale-105 transition-all">
               {saving ? (
