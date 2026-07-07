@@ -17,6 +17,9 @@ export async function GET(request: NextRequest) {
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}`;
 
     const res = await googleApiFetch(url);
+    if (!res) {
+      throw new Error("Gagal melakukan request ke Google Sheets API");
+    }
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
       throw new Error(errData.error?.message || "Gagal mengambil data dari Google Sheets");

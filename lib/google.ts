@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 
-export async function googleApiFetch(url: string, options: RequestInit = {}) {
+export async function googleApiFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const supabase = await createClient();
   const { data: { session } } = await supabase.auth.getSession();
   
@@ -83,6 +83,10 @@ export async function googleApiFetch(url: string, options: RequestInit = {}) {
         Authorization: `Bearer ${accessToken}`,
       },
     });
+  }
+
+  if (!res) {
+    throw new Error("Gagal mengambil data dari Google API");
   }
 
   return res;
