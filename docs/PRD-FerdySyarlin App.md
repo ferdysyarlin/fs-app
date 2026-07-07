@@ -1,8 +1,8 @@
 # Product Requirements Document (PRD)
 ## Aplikasi Pencatatan Kerja Harian
 **Pemilik Produk:** Ferdy Syarlin  
-**Versi:** 2.1.0  
-**Tanggal:** 3 Juli 2026  
+**Versi:** 2.2.0  
+**Tanggal:** 7 Juli 2026  
 **Status:** Production (deployed ke Vercel)
 
 ---
@@ -99,8 +99,16 @@ Aplikasi ini dibangun untuk kebutuhan pencatatan aktivitas kerja harian secara p
 - Dapat diakses tanpa login
 - Mendukung tema terang/gelap
 
+### 5.7 Arsip Kinerja
+
+- Halaman terpisah (`/arsip-kinerja`) untuk mengakses rekaman data log kinerja masa lalu.
+- Data bersumber murni dari Google Sheets (tab `arsip-kinerja`) secara *read-only*.
+- Menampilkan detail log menggunakan modal *read-only* yang melindungi data historis agar tidak sengaja termodifikasi.
+- Menerapkan *lazy loading* (infinite scroll) tanpa pagination untuk performa maksimal.
+- Dilengkapi fitur filter pencarian, status, bulan, dan tahun dinamis.
+
 > [!NOTE]
-> Fitur **Kinerja**, **Arsip**, **Pencarian global**, dan **Internal Link (Obsidian-like)** telah dihapus dari scope aktif. Dapat dikembangkan kembali di versi mendatang.
+> Fitur **Pencarian global** dan **Internal Link (Obsidian-like)** telah dihapus dari scope aktif. Dapat dikembangkan kembali di versi mendatang. Fitur **Arsip** telah diimplementasikan secara terpisah via Google Sheets.
 
 ---
 
@@ -214,6 +222,7 @@ Next.js (Vercel)
 │   │   │   ├── @modal/   → parallel route slot modal
 │   │   │   ├── [id]/     → detail log
 │   │   │   └── new/      → form tambah log baru
+│   │   ├── arsip-kinerja/→ daftar arsip kinerja dari Google Sheets
 │   │   ├── tasks/        → daftar tugas tersinkron Google Tasks
 │   │   ├── laporan/      → laporan WFH & bulanan (cetak A4)
 │   │   └── settings/     → profil pegawai + foto profil
@@ -221,6 +230,7 @@ Next.js (Vercel)
 │       ├── log/          → CRUD log kerja
 │       ├── log/[id]/     → detail, update, hapus log
 │       ├── google-tasks/ → sinkronisasi dengan Google Tasks API
+│       ├── google-sheets/→ sinkronisasi dengan Google Sheets (Arsip)
 │       ├── files/        → upload & hapus file Drive
 │       ├── image/[id]/   → proxy streaming gambar Drive
 │       ├── tags/         → daftar semua tag
@@ -290,6 +300,7 @@ Next.js (Vercel)
 | vCard Publik | `/` | ✅ Live |
 | Login | `/login` | ✅ Live |
 | Log Kerja | `/log` | ✅ Live |
+| Arsip Kinerja | `/arsip-kinerja` | ✅ Live |
 | Laporan | `/laporan` | ✅ Live |
 | Pengaturan | `/settings` | ✅ Live |
 | 404 | `/*` | ✅ Live |
@@ -329,7 +340,8 @@ Next.js (Vercel)
 | **Fase 5** | Mobile responsive + dark mode | ✅ Selesai |
 | **Fase 6** | Deployment Vercel + GitHub CI/CD | ✅ Selesai (3 Juli 2026) |
 | **Fase 7** | Integrasi Google Tasks (Sinkronisasi & Tautan ke Log) | ✅ Selesai |
-| **Fase 8** *(opsional)* | Modul kinerja, arsip, internal link | 🔲 Belum dimulai |
+| **Fase 8** | Arsip Kinerja via Google Sheets + Fitur Baca Arsip | ✅ Selesai (7 Juli 2026) |
+| **Fase 9** *(opsional)* | Pencarian global, internal link | 🔲 Belum dimulai |
 
 ---
 
