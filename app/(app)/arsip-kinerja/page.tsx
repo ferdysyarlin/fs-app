@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { Card, CardContent } from "@/components/ui/card";
@@ -50,13 +50,13 @@ export default function ArsipKinerjaPage() {
     return data.sort((a: any, b: any) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
   }, { keepPreviousData: true });
 
-  const allLogs: LogKerja[] = data || [];
+  const allLogs: LogKerja[] = useMemo(() => data || [], [data]);
   const loading = isLoading;
 
   // Dynamic Years
-  const yearOptions = Array.from(
+  const yearOptions = useMemo(() => Array.from(
     new Set(allLogs.map((log: any) => log.tanggal.substring(0, 4)))
-  ).sort((a: any, b: any) => Number(b) - Number(a));
+  ).sort((a: any, b: any) => Number(b) - Number(a)), [allLogs]);
 
   const fetchLogs = () => { mutate(); };
 

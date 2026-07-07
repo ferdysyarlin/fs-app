@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import useSWR from "swr";
 import Link from "next/link";
@@ -135,7 +135,7 @@ export default function LogListPage() {
 
   useEffect(() => { setMounted(true); }, []);
 
-  const logs: any[] = data?.data || [];
+  const logs: any[] = useMemo(() => data?.data || [], [data]);
   const total = data?.count || 0;
   const loading = isLoading;
 
