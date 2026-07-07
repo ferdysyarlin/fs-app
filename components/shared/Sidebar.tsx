@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
+import { PWAInstallButton } from "./PWAInstallButton";
 
 type NavItem = {
   href: string;
@@ -111,6 +112,9 @@ export function Sidebar({ userEmail, userAvatar, userName }: SidebarProps) {
 
       {/* Theme & User Profile */}
       <div className="p-3 mt-auto space-y-3">
+        {/* PWA Install Button - desktop */}
+        {isExpanded && <PWAInstallButton />}
+
         {mounted && (
           <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
@@ -284,7 +288,10 @@ export function Sidebar({ userEmail, userAvatar, userName }: SidebarProps) {
               })}
             </nav>
 
-            <div className="p-3 mt-auto">
+            <div className="p-3 mt-auto space-y-2">
+              {/* PWA Install Button - mobile */}
+              <PWAInstallButton />
+
               {mounted && (
                 <button
                   onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
