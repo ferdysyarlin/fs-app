@@ -23,6 +23,10 @@ export async function createClient() {
           }
         },
       },
+      cookieOptions: {
+        maxAge: 60 * 60 * 24 * 365, // 1 tahun
+        secure: process.env.NODE_ENV === "production",
+      }
     }
   );
 }
