@@ -58,14 +58,22 @@ export default function TasksPage() {
     if (!res.ok) throw new Error(json.error);
     if (json.tasklistId) setTasklistId(json.tasklistId);
     return json.data || [];
-  }, { keepPreviousData: true });
+  }, {
+    keepPreviousData: true,
+    revalidateIfStale: false,
+    dedupingInterval: 30_000,
+  });
 
   const { data: linkedData, isValidating: linkedValidating } = useSWR("/api/google-tasks/linked-logs-all", async (url) => {
     const res = await fetch(url);
     if (!res.ok) return [];
     const json = await res.json();
     return json.data || [];
-  }, { keepPreviousData: true });
+  }, {
+    keepPreviousData: true,
+    revalidateIfStale: false,
+    dedupingInterval: 60_000,
+  });
 
   const tasks: GTask[] = tasksData || [];
   const loading = !tasksData && !tasksError && tasksValidating;

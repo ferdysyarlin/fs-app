@@ -131,7 +131,13 @@ export default function LogListPage() {
     const res = await fetch(url);
     if (!res.ok) throw new Error("Gagal load");
     return res.json();
-  }, { keepPreviousData: true });
+  }, {
+    keepPreviousData: true,
+    // Jangan re-fetch jika data sudah ada di cache global — tampilkan instan,
+    // background revalidation tetap terjadi sesuai dedupingInterval
+    revalidateIfStale: false,
+    dedupingInterval: 30_000,
+  });
 
   useEffect(() => { setMounted(true); }, []);
 

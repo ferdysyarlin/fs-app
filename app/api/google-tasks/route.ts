@@ -28,6 +28,11 @@ export async function GET() {
       data: tasksData.items ?? [],
       tasklistId,
       error: null,
+    }, {
+      headers: {
+        // Stale-while-revalidate: tampilkan cache lama segera, refetch background
+        "Cache-Control": "private, max-age=30, stale-while-revalidate=300",
+      },
     });
   } catch (err: any) {
     const status = err.message.includes("token") ? 401 : 500;

@@ -36,7 +36,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message, data: null }, { status: 500 });
   }
 
-  return NextResponse.json({ data, error: null, count });
+  const response = NextResponse.json({ data, error: null, count });
+  // Stale-while-revalidate: browser langsung pakai cache lama (30 detik),
+  // sambil refetch di background — halaman terasa instan saat navigasi balik
+  response.headers.set(
+    "Cache-Control",
+    "private, max-age=30, stale-while-revalidate=300"
+  );
+  return response;
 }
 
 
